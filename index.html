@@ -93,7 +93,7 @@
 
       /* Perbesar ukuran font deskripsi khusus cetak */
       .print-desc-text {
-        font-size: 12.5px !important;
+        font-size: 13px !important;
         line-height: 1.55 !important;
         color: #1e293b !important; /* Slate gelap premium untuk hasil tinta tajam */
       }
@@ -111,7 +111,7 @@
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen">
+<body class="bg-slate-100 text-slate-800 min-h-screen">
   
   <div id="root"></div>
 
@@ -207,7 +207,7 @@
       ]
     };
 
-    // Database Default awal
+    // Database Default awal - Selalu ada isinya secara instan!
     const initialStudents = [
       { 
         id: "1", 
@@ -222,7 +222,7 @@
         ibadah: "Sangat istiqamah dalam shalat berjamaah lima waktu di mushola putri asrama, rajin mengamalkan puasa sunnah Senin-Kamis, dan aktif memimpin pembacaan dzikir pagi.", 
         tahfizh_juz: 5, 
         tahfizh_detail: "5 Juz (Lancar Juz 30, 29, 28, Surah Al-Kahfi, dan Yasin)", 
-        disiplin: "Selalu mematuhi peraturan pondok dengan gembira, merapikan kasur and lemari secara mandiri tanpa disuruh, serta menjadi panutan berpakaian rapi bagi teman asramanya.", 
+        disiplin: "Selalu mematuhi peraturan pondok dengan gembira, merapikan kasur dan lemari secara mandiri tanpa disuruh, serta menjadi panutan berpakaian rapi bagi teman asramanya.", 
         sosial: "Memiliki jiwa kepemimpinan (leadership) alamiah yang menonjol, sangat mudah bergaul, gemar menolong teman yang kesulitan, dan mampu menciptakan suasana harmonis di kelas.", 
         prestasi: "Juara 1 Lomba Pidato Dakwah Keagamaan (Muhadharah) tingkat Pondok Pesantren Malika.", 
         fokus: "Meningkatkan ketelitian dalam menyelesaikan soal hitungan Matematika dan lebih tenang serta tartil ketika menyetor hafalan baru.", 
@@ -253,7 +253,7 @@
     ];
 
     function App() {
-      // Inisialisasi State Santri menggunakan data lokal terstruktur
+      // Inisialisasi awal menggunakan data lokal langsung agar tidak ada blank screen!
       const [students, setStudents] = useState(initialStudents);
 
       // State Pengaturan Global (Semester, Tanggal, dll)
@@ -264,14 +264,16 @@
       const [globalJabatanKS, setGlobalJabatanKS] = useState("Kepala SMP");
       const [globalNamaKS, setGlobalNamaKS] = useState("Ustadz Abd. Halim, S.S.I");
 
+      // ID Santri Pertama terpilih secara default agar langsung tampil preview rapor
       const [selectedStudentId, setSelectedStudentId] = useState("1");
+      
       const [bulkImportText, setBulkImportText] = useState("");
       const [showImportModal, setShowImportModal] = useState(false);
       const [editingStudent, setEditingStudent] = useState(null);
       const [isAddingNew, setIsAddingNew] = useState(false);
       const [alertConfig, setAlertConfig] = useState(null);
 
-      // State untuk menyembunyikan/menampilkan panel Pengaturan Identitas Dokumen (Default: false)
+      // State collapsible Pengaturan Identitas Dokumen (Default: false agar tersembunyi rapi)
       const [showSettings, setShowSettings] = useState(false);
 
       // Dropdown pencarian santri di filter bar utama
@@ -283,7 +285,10 @@
         );
       }, [students, reportSearchQuery]);
 
-      const selectedStudent = students.find(s => String(s.id) === String(selectedStudentId)) || students[0] || null;
+      const selectedStudent = useMemo(() => {
+        return students.find(s => String(s.id) === String(selectedStudentId)) || students[0] || null;
+      }, [students, selectedStudentId]);
+
       const currentIndex = students.findIndex(s => String(s.id) === String(selectedStudentId));
 
       const triggerAlert = (message, title = "Informasi") => {
@@ -561,7 +566,7 @@
       const progress = selectedStudent ? calculateChange(selectedStudent) : { percent: "0", positive: true };
 
       return (
-        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
+        <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-800">
           
           {/* Header Lebih Rapi & Minimalis */}
           <header className="bg-gradient-to-r from-[#1e293b] to-[#0f172a] text-white shadow-lg print:hidden border-b border-slate-800">
@@ -574,6 +579,10 @@
                   <h1 className="text-base font-extrabold tracking-wide uppercase leading-none text-slate-100">MALIKA ISLAMIC BOARDING SCHOOL</h1>
                   <p className="text-[10px] text-indigo-300 font-semibold mt-1">Sistem Rapor Holistik Perkembangan Santriwati</p>
                 </div>
+              </div>
+              <div className="px-3 py-1 bg-slate-800/80 rounded-full text-[10px] font-bold flex items-center gap-2 border border-slate-700/60 shadow-inner">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span className="text-emerald-400">Mode Lokal Aktif</span>
               </div>
             </div>
           </header>
@@ -653,15 +662,11 @@
                   {/* Dropdown Pintar */}
                   <div className="relative flex-grow">
                     <select value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)} className="w-full h-9 pl-3.5 pr-8 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none cursor-pointer">
-                      {filteredOptionStudents.length > 0 ? (
-                        filteredOptionStudents.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.nama} ({s.nis.split('/')[0]})
-                          </option>
-                        ))
-                      ) : (
-                        <option disabled>Siswa tidak ditemukan</option>
-                      )}
+                      {filteredOptionStudents.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nama} ({s.nis.split('/')[0]})
+                        </option>
+                      ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400">
                       ▼
