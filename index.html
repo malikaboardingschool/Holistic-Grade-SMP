@@ -15,11 +15,6 @@
   <!-- Babel Standalone CDN -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Firebase SDK versi Compat (Sangat Stabil di Iframe & Sandboxed Browser) -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&display=swap');
     body {
@@ -32,10 +27,10 @@
     }
     
     @media print {
-      /* Mengatur latar belakang putih & ketajaman teks saat cetak */
+      /* Mengunci layar agar persis ukuran kertas A4 */
       html, body {
         background-color: white !important;
-        color: black !important;
+        color: #0f172a !important;
         padding: 0 !important;
         margin: 0 !important;
         width: 210mm !important;
@@ -44,12 +39,12 @@
         print-color-adjust: exact !important;
       }
       
-      /* Sembunyikan elemen navigasi saat cetak */
+      /* Sembunyikan elemen navigasi dan tombol kontrol */
       header, .no-print, .print-hidden, button, select, footer, input, .search-box {
         display: none !important;
       }
       
-      /* Sesuaikan pembungkus utama */
+      /* Pembungkus halaman utama */
       .min-h-screen, .flex-grow, .max-w-4xl, .mx-auto, .p-4, .space-y-6 {
         padding: 0 !important;
         margin: 0 !important;
@@ -59,12 +54,12 @@
         background: transparent !important;
       }
 
-      /* Kunci ukuran cetak tepat A4 */
+      /* Kunci ukuran per halaman A4 tanpa kompromi */
       .print-page {
         width: 210mm !important;
         height: 297mm !important;
-        min-height: 297mm !important;
-        padding: 18mm !important; /* Margin aman premium */
+        max-height: 297mm !important;
+        padding: 16mm 18mm !important; /* Margin aman cetak premium */
         margin: 0 auto !important;
         box-sizing: border-box !important;
         page-break-after: always !important;
@@ -73,27 +68,45 @@
         border: none !important;
         box-shadow: none !important;
         position: relative !important;
-        overflow: hidden !important;
+        overflow: hidden !important; /* Mencegah bleed/overflow ke halaman 3 */
       }
       
       .print-page:last-child {
         page-break-after: avoid !important;
       }
 
-      /* Paksa grid dua kolom tetap aktif saat dicetak */
+      /* Grid 2 kolom presisi di kertas */
       .grid-cols-print-2 {
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         gap: 16px !important;
       }
 
-      /* Mengunci tinggi elemen agar pas di satu halaman A4 */
-      .h-print-230 {
-        height: 230px !important;
+      /* Kunci tinggi statis elemen pada Page 1 */
+      .h-print-chart {
+        height: 58mm !important;
       }
       
-      .h-print-105 {
-        height: 105px !important;
+      .h-print-half {
+        height: 29mm !important;
+      }
+
+      /* Perbesar ukuran font deskripsi khusus cetak */
+      .print-desc-text {
+        font-size: 12.5px !important;
+        line-height: 1.55 !important;
+        color: #1e293b !important; /* Slate gelap premium untuk hasil tinta tajam */
+      }
+
+      /* Ukuran font judul section */
+      .print-title-text {
+        font-size: 13px !important;
+        font-weight: 800 !important;
+      }
+      
+      /* Tanda tangan lapang */
+      .print-signature-space {
+        height: 72px !important;
       }
     }
   </style>
@@ -105,30 +118,6 @@
   <!-- React Code in Babel Script -->
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
-
-    // Inisialisasi Firebase menggunakan versi Compat untuk menghindari isu modul ES6 di iframe
-    let app, auth, db;
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-    try {
-      const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-        apiKey: "",
-        authDomain: "",
-        projectId: "",
-        storageBucket: "",
-        messagingSenderId: "",
-        appId: ""
-      };
-      if (!firebase.apps.length) {
-        app = firebase.initializeApp(firebaseConfig);
-      } else {
-        app = firebase.app();
-      }
-      auth = firebase.auth();
-      db = firebase.firestore();
-    } catch (e) {
-      console.error("Firebase Gagal Memuat:", e);
-    }
 
     // Pilihan Jawaban Templat untuk Membantu Pengisian Cepat
     const QUICK_TEMPLATES = {
@@ -218,7 +207,7 @@
       ]
     };
 
-    // Database Default awal jika database cloud kosong
+    // Database Default awal
     const initialStudents = [
       { 
         id: "1", 
@@ -264,12 +253,10 @@
     ];
 
     function App() {
-      // Inisialisasi State Santri dari database online (jika kosong, gunakan initialStudents)
-      const [students, setStudents] = useState([]);
-      const [user, setUser] = useState(null);
-      const [authLoading, setAuthLoading] = useState(true);
+      // Inisialisasi State Santri menggunakan data lokal terstruktur
+      const [students, setStudents] = useState(initialStudents);
 
-      // State Pengaturan Global (Semester, Tanggal, dll) yang juga akan disinkronisasikan ke Awan
+      // State Pengaturan Global (Semester, Tanggal, dll)
       const [globalSemester, setGlobalSemester] = useState("Ganjil 2025/2026");
       const [globalTanggal, setGlobalTanggal] = useState("19 Desember 2025");
       const [globalWaliKelas, setGlobalWaliKelas] = useState("Ustadzah Maulana Azka, S.Pd.");
@@ -284,113 +271,8 @@
       const [isAddingNew, setIsAddingNew] = useState(false);
       const [alertConfig, setAlertConfig] = useState(null);
 
-      // State untuk menyembunyikan/menampilkan panel Pengaturan Identitas Dokumen (Default: false agar langsung fokus)
+      // State untuk menyembunyikan/menampilkan panel Pengaturan Identitas Dokumen (Default: false)
       const [showSettings, setShowSettings] = useState(false);
-
-      // --- PROTOKOL FIREBASE AUTH & SIGN IN ---
-      useEffect(() => {
-        if (!auth) {
-          setAuthLoading(false);
-          return;
-        }
-        const initAuth = async () => {
-          try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-              await auth.signInWithCustomToken(__initial_auth_token);
-            } else {
-              await auth.signInAnonymously();
-            }
-          } catch (error) {
-            console.error("Autentikasi Firebase Gagal:", error);
-            setAuthLoading(false);
-          }
-        };
-        initAuth();
-        const unsubscribe = auth.onAuthStateChanged((usr) => {
-          setUser(usr);
-          setAuthLoading(false);
-        });
-        return () => unsubscribe();
-      }, []);
-
-      // --- SINKRONISASI REAL-TIME DATA SANTRIWATI ---
-      useEffect(() => {
-        if (!user || !db) return;
-
-        // Strict Path sesuai RULE 1 menggunakan model Firebase Compat Pathing
-        const studentsCol = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('students');
-        
-        // Membuka listener real-time (onSnapshot) dengan error callback
-        const unsubscribe = studentsCol.onSnapshot((snapshot) => {
-          const list = [];
-          snapshot.forEach((doc) => {
-            list.push({ id: doc.id, ...doc.data() });
-          });
-
-          if (list.length === 0) {
-            // Seeding otomatis data default awal jika cloud kosong
-            initialStudents.forEach(async (s) => {
-              await studentsCol.doc(s.id).set(s);
-            });
-          } else {
-            // Urutkan berdasarkan nomor NIS
-            list.sort((a, b) => {
-              const numA = parseInt(a.nis.replace(/\D/g, '')) || 0;
-              const numB = parseInt(b.nis.replace(/\D/g, '')) || 0;
-              return numA - numB;
-            });
-            setStudents(list);
-          }
-        }, (error) => {
-          console.error("Firestore error santriwati:", error);
-        });
-
-        return () => unsubscribe();
-      }, [user]);
-
-      // --- SINKRONISASI REAL-TIME PENGATURAN GLOBAL ---
-      useEffect(() => {
-        if (!user || !db) return;
-
-        const settingsDoc = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('settings').doc('global');
-        
-        const unsubscribe = settingsDoc.onSnapshot((docSnap) => {
-          if (docSnap.exists) {
-            const data = docSnap.data();
-            if (data.semester) setGlobalSemester(data.semester);
-            if (data.tanggal) setGlobalTanggal(data.tanggal);
-            if (data.waliKelas) setGlobalWaliKelas(data.waliKelas);
-            if (data.waliKamar) setGlobalWaliKamar(data.waliKamar);
-            if (data.jabatanKS) setGlobalJabatanKS(data.jabatanKS);
-            if (data.namaKS) setGlobalNamaKS(data.namaKS);
-          } else {
-            // Seeding default setting di awan
-            settingsDoc.set({
-              semester: "Ganjil 2025/2026",
-              tanggal: "19 Desember 2025",
-              waliKelas: "Ustadzah Maulana Azka, S.Pd.",
-              waliKamar: "Ustadzah Sarah Mutia",
-              jabatanKS: "Kepala SMP",
-              namaKS: "Ustadz Abd. Halim, S.S.I"
-            });
-          }
-        }, (error) => {
-          console.error("Firestore error setting:", error);
-        });
-
-        return () => unsubscribe();
-      }, [user]);
-
-      // Helper untuk menulis setting ke Firestore
-      const updateGlobalSettingInCloud = async (key, val) => {
-        if (!user || !db) return;
-        try {
-          const settingsDoc = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('settings').doc('global');
-          await settingsDoc.set({ [key]: val }, { merge: true });
-        } catch (err) {
-          console.error("Gagal update setting cloud:", err);
-        }
-      };
 
       // Dropdown pencarian santri di filter bar utama
       const [reportSearchQuery, setReportSearchQuery] = useState("");
@@ -431,57 +313,47 @@
         }
       };
 
-      // Menyimpan data santriwati langsung ke database cloud
-      const handleSaveStudent = async (studentData) => {
-        if (!user || !db) {
-          triggerAlert("Gagal terhubung ke database awan.", "Koneksi Terputus");
-          return;
-        }
-
+      // Menyimpan data santriwati langsung ke dalam state lokal
+      const handleSaveStudent = (studentData) => {
         const studentId = isAddingNew ? Date.now().toString() : studentData.id;
         const updatedPayload = {
           ...studentData,
           id: studentId,
-          sas: Number(studentData.sas) || 80,
-          sat: Number(studentData.sat) || 80,
+          sas: Number(studentData.sas) || 85,
+          sat: Number(studentData.sat) || 88,
           tahfizh_juz: Number(studentData.tahfizh_juz) || 0
         };
 
-        try {
-          const studentDocRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('students').doc(studentId);
-          await studentDocRef.set(updatedPayload);
-          
+        if (isAddingNew) {
+          setStudents([...students, updatedPayload]);
           setSelectedStudentId(studentId);
-          setEditingStudent(null);
-          setIsAddingNew(false);
-          triggerAlert(`Data rapor ananda ${studentData.nama} berhasil disimpan!`, "Sukses Menyimpan");
-        } catch (err) {
-          console.error("Gagal menyimpan ke cloud:", err);
-          triggerAlert("Gagal menyimpan data ke awan. Silakan coba kembali.", "Eror");
+        } else {
+          setStudents(students.map(s => s.id === studentData.id ? updatedPayload : s));
         }
+
+        setEditingStudent(null);
+        setIsAddingNew(false);
+        triggerAlert(`Data rapor ananda ${studentData.nama} berhasil disimpan!`, "Sukses Menyimpan");
       };
 
-      // Menghapus data santriwati dari database cloud
+      // Menghapus data santriwati dari state lokal
       const handleDeleteStudent = (id, name) => {
-        triggerConfirm(`Apakah Anda yakin ingin menghapus data santriwati "${name}" secara permanen dari database cloud?`, async () => {
-          if (!user || !db) return;
-          try {
-            const studentDocRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('students').doc(id);
-            await studentDocRef.delete();
-            triggerAlert("Data santriwati berhasil dihapus dari cloud.", "Sukses Terhapus");
-            // Kembalikan pilihan ke siswa pertama jika ada
-            if (students.length > 1) {
-              const nextValid = students.find(s => s.id !== id);
-              if (nextValid) setSelectedStudentId(nextValid.id);
+        triggerConfirm(`Apakah Anda yakin ingin menghapus data santriwati "${name}" secara permanen?`, () => {
+          const updated = students.filter(s => s.id !== id);
+          setStudents(updated);
+          triggerAlert("Data santriwati berhasil dihapus.", "Sukses Terhapus");
+          
+          if (updated.length > 0) {
+            if (String(selectedStudentId) === String(id)) {
+              setSelectedStudentId(updated[0].id);
             }
-          } catch (err) {
-            console.error("Gagal menghapus:", err);
-            triggerAlert("Gagal menghapus data dari cloud.", "Eror");
+          } else {
+            setSelectedStudentId("");
           }
         });
       };
 
-      // Ekspor ke CSV / Excel-ready format
+      // Download Data Excel / CSV dengan 10 kolom presisi
       const handleDownloadExcel = () => {
         if (students.length === 0) {
           triggerAlert("Tidak ada data siswa untuk diunduh.", "Data Kosong");
@@ -489,16 +361,29 @@
         }
 
         const headers = [
-          "Nama Lengkap", "NIS/Kelas", "Nilai SAS (Ganjil)", "Nilai SAT (Genap)", 
-          "Hasil Psikotes", "Progres 1 Semester", "Mapel Unggul", "Mapel Perlu Peningkatan", 
-          "Observasi Ibadah Harian", "Tahfizh (Juz)", "Keterangan Tahfizh", "Sikap dan Disiplin", 
-          "Sosial dan Kepemimpinan", "Prestasi Non-Akademik", "Fokus Kelas Selanjutnya", "Pesan Wali Kelas"
+          "Nama Santri", 
+          "NIS / Kelas", 
+          "Perkembangan Nyata", 
+          "Tahfizh Al-Qur'an", 
+          "Ibadah Harian", 
+          "Sikap & Disiplin", 
+          "Kepemimpinan & Sosial", 
+          "Prestasi Non-Akademik", 
+          "Fokus Peningkatan & Target Selanjutnya", 
+          "Pesan Wali Kelas & Wali Kamar"
         ];
 
         const rows = students.map(s => [
-          s.nama || "", s.nis || "", s.sas || 80, s.sat || 80, s.psikotes || "", s.progres_1s || "",
-          s.mapel_unggul || "", s.mapel_perlu || "", s.ibadah || "", s.tahfizh_juz || 0, s.tahfizh_detail || "",
-          s.disiplin || "", s.sosial || "", s.prestasi || "", s.fokus || "", s.pesan_wali || ""
+          s.nama || "", 
+          s.nis || "", 
+          s.progres_1s || "", 
+          s.tahfizh_detail || (s.tahfizh_juz ? `${s.tahfizh_juz} Juz` : "0 Juz"), 
+          s.ibadah || "", 
+          s.disiplin || "", 
+          s.sosial || "", 
+          s.prestasi || "", 
+          s.fokus || "", 
+          s.pesan_wali || ""
         ]);
 
         const escapeCSV = (val) => {
@@ -525,89 +410,141 @@
         document.body.removeChild(link);
       };
 
-      // Template Generator untuk Memudahkan Impor Massal
+      // Template Generator untuk Memudahkan Impor / Upload Massal
       const getTemplateTSV = () => {
-        const headers = "Nama Lengkap\tNIS/Kelas\tNilai SAS (Ganjil)\tNilai SAT (Genap)\tHasil Psikotes\tProgres 1 Semester\tMapel Unggul\tMapel Perlu Peningkatan\tObservasi Ibadah Harian\tTahfizh (Juz)\tKeterangan Tahfizh\tSikap dan Disiplin\tSosial dan Kepemimpinan\tPrestasi Non-Akademik\tFokus Kelas Selanjutnya\tPesan Wali Kelas";
-        const dummyRow = "Aira Fitriani Azzahra\tNIS-001/7 A\t85\t90\tPotensi kognitif logis yang sangat unggul.\tMengalami kemajuan signifikan di kelas.\tMatematika, IPA\tBahasa Inggris\tSangat rajin shalat berjamaah dan ramah.\t4\t4 Juz lancar\tSangat disiplin dan taat.\tMemiliki pengaruh kepemimpinan yang baik.\tJuara 2 Memanah\tFokus pada kematangan tata bahasa arab.\tPertahankan prestasimu nak!";
+        const headers = "Nama Santri\tNIS / Kelas\tPerkembangan Nyata\tTahfizh Al-Qur'an\tIbadah Harian\tSikap & Disiplin\tKepemimpinan & Sosial\tPrestasi Non-Akademik\tFokus Peningkatan & Target Selanjutnya\tPesan Wali Kelas & Wali Kamar";
+        const dummyRow = "Aira Fitriani Azzahra\tNIS-001/7 A\tMengalami lompatan pemahaman kognitif yang sangat baik, sangat vokal dan antusias dalam berdiskusi kelompok, serta konsisten menyerahkan tugas tepat waktu.\t5 Juz (Lancar Juz 30, 29, 28, Surah Al-Kahfi, dan Yasin)\tSangat istiqamah dalam shalat berjamaah lima waktu di mushola putri asrama, rajin mengamalkan puasa sunnah Senin-Kamis.\tSelalu mematuhi peraturan pondok dengan gembira, merapikan kasur and lemari secara mandiri.\tMemiliki jiwa kepemimpinan (leadership) alamiah yang menonjol, sangat mudah bergaul, gemar menolong teman.\tJuara 1 Lomba Pidato Dakwah Keagamaan (Muhadharah) tingkat Pondok Pesantren.\tMeningkatkan ketelitian dalam menyelesaikan soal hitungan Matematika dan lebih tenang serta tartil ketika menyetor hafalan baru.\tMasya Allah, ananda Aira adalah santriwati yang penuh energi positif. Teruslah konsisten menjaga ibadah.";
         
         setBulkImportText(`${headers}\n${dummyRow}`);
-        triggerAlert("Template berhasil dimuat di kolom teks di bawah! Anda bisa menyalinnya ke Excel/Sheets untuk diisi, lalu klik 'Proses & Impor'.", "Template Berhasil Dimuat");
+        triggerAlert("Template berhasil dimuat di kolom teks di bawah! Anda bisa menyalinnya ke Excel/Sheets untuk diisi, lalu klik 'Proses & Upload'.", "Template Berhasil Dimuat");
       };
 
-      // Proses Impor Data TSV langsung diunggah ke Database Cloud
-      const handleImportTSV = async () => {
-        if (!user || !db) return;
+      // Membaca file yang diupload pengguna
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const text = event.target.result;
+          setBulkImportText(text);
+          triggerAlert("File berhasil dibaca! Silakan tinjau teks di bawah dan klik 'Proses & Upload' untuk menyimpannya.", "File Terbaca");
+        };
+        reader.readAsText(file);
+      };
+
+      // Fungsi Pembaca Baris CSV/TSV Tingkat Lanjut agar Tanda Kutip Ganda dan Kolom Kosong Terproses Sempurna
+      const parseCSVRow = (text, delim) => {
+        let result = [];
+        let start = 0;
+        let inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+          if (text[i] === '"') {
+            inQuotes = !inQuotes;
+          } else if (text[i] === delim && !inQuotes) {
+            let value = text.substring(start, i).trim();
+            if (value.startsWith('"') && value.endsWith('"')) {
+              value = value.substring(1, value.length - 1).replace(/""/g, '"');
+            }
+            result.push(value);
+            start = i + 1;
+          }
+        }
+        let value = text.substring(start).trim();
+        if (value.startsWith('"') && value.endsWith('"')) {
+          value = value.substring(1, value.length - 1).replace(/""/g, '"');
+        }
+        result.push(value);
+        return result;
+      };
+
+      // Proses Impor Data TSV/CSV yang diupload langsung ke State Lokal
+      const handleImportTSV = () => {
         try {
           const lines = bulkImportText.trim().split("\n");
           if (lines.length < 2) {
-            triggerAlert("Mohon masukkan data berformat spreadsheet (minimal terdapat baris tajuk dan satu baris data).", "Gagal Impor");
+            triggerAlert("Mohon masukkan data berformat spreadsheet (minimal terdapat baris tajuk dan satu baris data).", "Gagal Upload");
             return;
           }
           
-          const headers = lines[0].toLowerCase().split("\t").map(h => h.trim());
-          const newStudents = [];
+          // Deteksi pemisah baris (tab, titik koma, atau koma)
+          let delimiter = "\t";
+          if (lines[0].includes(";")) delimiter = ";";
+          else if (lines[0].includes(",") && !lines[0].includes("\t")) delimiter = ",";
+
+          const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^["']|["']$/g, '').toLowerCase());
+          const newStudentsList = [];
 
           for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
-            const cols = lines[i].split("\t").map(c => c.trim());
+            
+            let cols = [];
+            if (delimiter === "," || delimiter === ";") {
+              cols = parseCSVRow(lines[i], delimiter);
+            } else {
+              cols = lines[i].split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
+            }
+
             const rowObj = {};
             
+            // Pemetaan Kolom dengan Prioritas yang Diperbaiki (Menghindari kata "kelas" di dalam teks pesan wali menimpa NIS)
             headers.forEach((header, index) => {
               let key = header;
-              if (header.includes("nama")) key = "nama";
-              else if (header.includes("nis") || header.includes("kelas")) key = "nis";
-              else if (header.includes("sas") || header.includes("ganjil") || header.includes("ats")) key = "sas";
-              else if (header.includes("sat") || header.includes("genap")) key = "sat";
-              else if (header.includes("psikotes")) key = "psikotes";
-              else if (header.includes("progres")) key = "progres_1s";
-              else if (header.includes("unggul")) key = "mapel_unggul";
-              else if (header.includes("perlu")) key = "mapel_perlu";
-              else if (header.includes("ibadah")) key = "ibadah";
-              else if (header.includes("tahfizh_juz") || header.includes("juz")) key = "tahfizh_juz";
-              else if (header.includes("tahfizh_detail") || header.includes("keterangan tahfizh")) key = "tahfizh_detail";
-              else if (header.includes("disiplin") || header.includes("sikap")) key = "disiplin";
-              else if (header.includes("sosial") || header.includes("interaksi")) key = "sosial";
-              else if (header.includes("prestasi")) key = "prestasi";
-              else if (header.includes("fokus")) key = "fokus";
-              else if (header.includes("pesan")) key = "pesan_wali";
+              if (header.includes("nama")) {
+                key = "nama";
+              } else if (header.includes("pesan") || header.includes("wali")) {
+                key = "pesan_wali";
+              } else if (header.includes("nis") || header.includes("kelas")) {
+                key = "nis";
+              } else if (header.includes("perkembangan") || header.includes("progres")) {
+                key = "progres_1s";
+              } else if (header.includes("tahfizh") || header.includes("qur'an") || header.includes("quran")) {
+                key = "tahfizh_detail";
+              } else if (header.includes("ibadah")) {
+                key = "ibadah";
+              } else if (header.includes("sikap") || header.includes("disiplin")) {
+                key = "disiplin";
+              } else if (header.includes("kepemimpinan") || header.includes("sosial")) {
+                key = "sosial";
+              } else if (header.includes("prestasi")) {
+                key = "prestasi";
+              } else if (header.includes("fokus") || header.includes("target") || header.includes("selanjutnya")) {
+                key = "fokus";
+              }
 
-              rowObj[key] = cols[index];
+              rowObj[key] = cols[index] || "";
             });
 
             const studentId = (Date.now() + i).toString();
             rowObj.id = studentId;
-            rowObj.sas = Number(rowObj.sas) || 80;
-            rowObj.sat = Number(rowObj.sat) || 80;
-            rowObj.tahfizh_juz = Number(rowObj.tahfizh_juz) || 0;
+
+            // Ekstrak angka juz dari deskripsi teks tahfizh
+            let extractedJuz = 0;
+            if (rowObj.tahfizh_detail) {
+              const numMatch = String(rowObj.tahfizh_detail).match(/\d+/);
+              extractedJuz = numMatch ? parseInt(numMatch[0]) : 0;
+            }
+            rowObj.tahfizh_juz = extractedJuz;
+
+            // Aturan Fallback parameter penunjang agar tampilan tidak eror
             rowObj.nama = rowObj.nama || "Santriwati Baru " + i;
             rowObj.nis = rowObj.nis || "NIS-xxx";
-            rowObj.psikotes = rowObj.psikotes || "Potensi dasar kognitif baik.";
-            rowObj.progres_1s = rowObj.progres_1s || "Berkembang sesuai harapan.";
-            rowObj.mapel_unggul = rowObj.mapel_unggul || "Fiqih";
-            rowObj.mapel_perlu = rowObj.mapel_perlu || "Matematika";
-            rowObj.ibadah = rowObj.ibadah || "Tertib ibadah wajib.";
-            rowObj.tahfizh_detail = rowObj.tahfizh_detail || `${rowObj.tahfizh_juz} Juz`;
-            rowObj.disiplin = rowObj.disiplin || "Menunjukkan sikap disiplin yang baik.";
-            rowObj.sosial = rowObj.sosial || "Mampu berinteraksi secara kooperatif.";
-            rowObj.prestasi = rowObj.prestasi || "-";
-            rowObj.fokus = rowObj.fokus || "Tingkatkan konsentrasi belajar.";
-            rowObj.pesan_wali = rowObj.pesan_wali || "Pertahankan semangatmu dalam belajar.";
+            rowObj.sas = 85;
+            rowObj.sat = 88;
+            rowObj.psikotes = "Menunjukkan stabilitas kognitif dan adaptasi sosial yang baik di lingkungan pondok.";
+            rowObj.mapel_unggul = "Bahasa Arab, Fiqih";
+            rowObj.mapel_perlu = "Matematika";
 
-            newStudents.push(rowObj);
+            newStudentsList.push(rowObj);
           }
 
-          // Menyimpan setiap data baru ke Firestore
-          for (const s of newStudents) {
-            const studentDocRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('students').doc(s.id);
-            await studentDocRef.set(s);
-          }
-
+          setStudents([...students, ...newStudentsList]);
           setShowImportModal(false);
           setBulkImportText("");
-          triggerAlert(`Berhasil mengimpor ${newStudents.length} data santriwati ke database cloud!`, "Impor Sukses");
+          triggerAlert(`Berhasil mengunggah ${newStudentsList.length} data santriwati baru!`, "Upload Sukses");
         } catch (err) {
-          console.error("Gagal impor TSV ke cloud:", err);
-          triggerAlert("Gagal memproses data impor ke database cloud.", "Kesalahan");
+          console.error("Gagal upload:", err);
+          triggerAlert("Gagal memproses data unggahan. Pastikan format file atau salinan tabel benar.", "Kesalahan");
         }
       };
 
@@ -637,26 +574,6 @@
                   <h1 className="text-base font-extrabold tracking-wide uppercase leading-none text-slate-100">MALIKA ISLAMIC BOARDING SCHOOL</h1>
                   <p className="text-[10px] text-indigo-300 font-semibold mt-1">Sistem Rapor Holistik Perkembangan Santriwati</p>
                 </div>
-              </div>
-              
-              {/* Indikator Status Database Awan */}
-              <div className="px-3 py-1 bg-slate-800/80 rounded-full text-[10px] font-bold flex items-center gap-2 border border-slate-700/60 shadow-inner">
-                {authLoading ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                    <span className="text-amber-200">Menghubungkan Database...</span>
-                  </>
-                ) : user ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <span className="text-emerald-400">Awan Terhubung</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-rose-400"></span>
-                    <span className="text-rose-300">Mode Lokal</span>
-                  </>
-                )}
               </div>
             </div>
           </header>
@@ -691,27 +608,27 @@
                 <div className="p-4 pt-0 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 animate-fadeIn">
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Semester</label>
-                    <input type="text" value={globalSemester} onChange={(e) => { setGlobalSemester(e.target.value); updateGlobalSettingInCloud('semester', e.target.value); }} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
+                    <input type="text" value={globalSemester} onChange={(e) => setGlobalSemester(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
                   </div>
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tanggal Rapor</label>
-                    <input type="text" value={globalTanggal} onChange={(e) => { setGlobalTanggal(e.target.value); updateGlobalSettingInCloud('tanggal', e.target.value); }} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
+                    <input type="text" value={globalTanggal} onChange={(e) => setGlobalTanggal(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
                   </div>
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Wali Kelas</label>
-                    <input type="text" value={globalWaliKelas} onChange={(e) => { setGlobalWaliKelas(e.target.value); updateGlobalSettingInCloud('waliKelas', e.target.value); }} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
+                    <input type="text" value={globalWaliKelas} onChange={(e) => setGlobalWaliKelas(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
                   </div>
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Wali Kamar</label>
-                    <input type="text" value={globalWaliKamar} onChange={(e) => { setGlobalWaliKamar(e.target.value); updateGlobalSettingInCloud('waliKamar', e.target.value); }} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
+                    <input type="text" value={globalWaliKamar} onChange={(e) => setGlobalWaliKamar(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
                   </div>
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Jabatan TTD</label>
-                    <input type="text" value={globalJabatanKS} onChange={(e) => { setGlobalJabatanKS(e.target.value); updateGlobalSettingInCloud('jabatanKS', e.target.value); }} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
+                    <input type="text" value={globalJabatanKS} onChange={(e) => setGlobalJabatanKS(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
                   </div>
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nama TTD (KS)</label>
-                    <input type="text" value={globalNamaKS} onChange={(e) => { setGlobalNamaKS(e.target.value); updateGlobalSettingInCloud('namaKS', e.target.value); }} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
+                    <input type="text" value={globalNamaKS} onChange={(e) => setGlobalNamaKS(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
                   </div>
                 </div>
               )}
@@ -766,17 +683,17 @@
                   <button onClick={() => { setIsAddingNew(false); setEditingStudent(selectedStudent); }} className="h-9 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200">
                     ✏️ Edit
                   </button>
-                  <button onClick={() => { setIsAddingNew(true); setEditingStudent({ nama: "", nis: "", sas: 80, sat: 80, psikotes: "", progres_1s: "", mapel_unggul: "", mapel_perlu: "", ibadah: "", tahfizh_juz: 0, tahfizh_detail: "", disiplin: "", sosial: "", prestasi: "", fokus: "", pesan_wali: "" }); }} className="h-9 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl transition border border-emerald-100">
+                  <button onClick={() => { setIsAddingNew(true); setEditingStudent({ nama: "", nis: "", sas: 85, sat: 88, psikotes: "", progres_1s: "", mapel_unggul: "", mapel_perlu: "", ibadah: "", tahfizh_juz: 0, tahfizh_detail: "", disiplin: "", sosial: "", prestasi: "", fokus: "", pesan_wali: "" }); }} className="h-9 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl transition border border-emerald-100">
                     ➕ Tambah
                   </button>
                   <button onClick={() => handleDeleteStudent(selectedStudent.id, selectedStudent.nama)} className="h-9 px-3 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition border border-rose-100">
                     🗑️ Hapus
                   </button>
-                  <button onClick={() => { setShowImportModal(true); setBulkImportText(""); }} className="h-9 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition border border-indigo-100">
-                    📥 Impor
+                  <button onClick={() => { setShowImportModal(true); setBulkImportText(""); }} className="h-9 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition border border-indigo-100" title="Upload spreadsheet atau data CSV">
+                    📤 Upload
                   </button>
-                  <button onClick={handleDownloadExcel} className="h-9 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl transition border border-blue-100">
-                    💾 Ekspor
+                  <button onClick={handleDownloadExcel} className="h-9 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl transition border border-blue-100" title="Unduh data format Excel">
+                    📥 Download
                   </button>
                   <button onClick={handlePrint} className="h-9 px-4.5 bg-[#2b3990] hover:bg-[#1f2a70] text-white font-extrabold text-xs uppercase rounded-xl transition shadow-md flex items-center gap-1.5">
                     🖨️ Cetak PDF
@@ -790,8 +707,8 @@
               {selectedStudent ? (
                 <div className="space-y-6">
                   
-                  {/* HALAMAN 1 (A4) */}
-                  <div className="print-page bg-white max-w-[210mm] mx-auto p-12 shadow-md border border-slate-200 relative overflow-hidden">
+                  {/* HALAMAN 1 (A4) - Strictly Locked Height & Width */}
+                  <div className="print-page print-h-page print-p-premium bg-white max-w-[210mm] mx-auto p-12 shadow-md border border-slate-200 relative overflow-hidden flex flex-col justify-between">
                     
                     {/* Watermark Logo Samar */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] pointer-events-none opacity-[0.03] flex items-center justify-center">
@@ -801,153 +718,153 @@
                     <div className="relative z-10 flex flex-col h-full justify-between">
                       <div>
                         {/* Kop Rapor Malika */}
-                        <div className="flex justify-between items-center border-b-2 border-[#2b3990] pb-4 mb-5">
+                        <div className="flex justify-between items-center border-b-2 border-[#2b3990] pb-3 mb-4">
                           <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 flex-shrink-0">
+                            <div className="w-14 h-16 flex-shrink-0">
                               <img src="https://iili.io/FsLlXA7.png" className="w-full h-full object-contain" />
                             </div>
                             <div>
-                              <h2 className="text-xl font-extrabold tracking-wider text-[#2b3990] leading-none mb-1">MALIKA ISLAMIC BOARDING SCHOOL</h2>
-                              <h3 className="text-sm font-black tracking-wider text-[#00aeef] leading-tight">RAPOR PERKEMBANGAN HOLISTIK SANTRIWATI</h3>
-                              <p className="text-[9px] text-slate-500 leading-tight">Jl. KS Tubun, RT. 002, RW. 02, Kel. Koang Jaya, Kec. Karawaci Kota Tangerang, Banten</p>
+                              <h2 className="text-lg font-extrabold tracking-wider text-[#2b3990] leading-none mb-1">MALIKA ISLAMIC BOARDING SCHOOL</h2>
+                              <h3 className="text-xs font-black tracking-wider text-[#00aeef] leading-tight">RAPOR PERKEMBANGAN HOLISTIK SANTRIWATI</h3>
+                              <p className="text-[8px] text-slate-500 leading-tight">Jl. KS Tubun, RT. 002, RW. 02, Kel. Koang Jaya, Kec. Karawaci Kota Tangerang, Banten</p>
                             </div>
                           </div>
                           <div className="text-right flex flex-col items-end justify-center">
-                            <span className="text-[11px] font-extrabold text-slate-700 tracking-wide">Semester: {globalSemester}</span>
+                            <span className="text-[10px] font-extrabold text-slate-700 tracking-wide">Semester: {globalSemester}</span>
                           </div>
                         </div>
 
                         {/* Identitas Santri */}
-                        <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/60 grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6 text-sm">
+                        <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/60 grid grid-cols-1 sm:grid-cols-2 gap-1 mb-4 text-xs">
                           <div>
-                            <span className="w-32 inline-block font-extrabold text-slate-500">Nama Santriwati</span>
-                            <span className="text-slate-900 font-extrabold text-base">: {selectedStudent.nama}</span>
+                            <span className="w-28 inline-block font-extrabold text-slate-500">Nama Santriwati</span>
+                            <span className="text-slate-900 font-extrabold text-sm">: {selectedStudent.nama}</span>
                           </div>
                           <div>
-                            <span className="w-32 inline-block font-bold text-slate-500">NIS / Kelas</span>
+                            <span className="w-28 inline-block font-bold text-slate-500">NIS / Kelas</span>
                             <span className="text-slate-900 font-semibold">: {selectedStudent.nis}</span>
                           </div>
                         </div>
 
                         {/* BAGIAN AKADEMIK */}
-                        <div className="mb-6">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-[4px] h-[22px] bg-[#2b3990]"></div>
-                            <h3 className="text-sm font-black uppercase text-indigo-950">I. AKADEMIK DAN PERKEMBANGAN DIRI</h3>
+                        <div className="mb-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-[4px] h-[18px] bg-[#2b3990]"></div>
+                            <h3 className="print-title-text text-xs font-black uppercase text-indigo-950">I. AKADEMIK DAN PERKEMBANGAN DIRI</h3>
                           </div>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-2 grid-cols-print-2 gap-4 mb-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 grid-cols-print-2 gap-3 mb-3">
                             
                             {/* Grafik Perbandingan Nilai SAS & SAT */}
-                            <div className="border border-slate-200 rounded-xl p-4 bg-white flex flex-col justify-between h-[230px] h-print-230 shadow-sm">
+                            <div className="border border-slate-200 rounded-xl p-3 bg-white flex flex-col justify-between h-[230px] h-print-chart shadow-sm">
                               <div>
-                                <h4 className="text-xs font-black text-[#2b3990] uppercase mb-3 flex items-center gap-1">
+                                <h4 className="text-[11px] font-black text-[#2b3990] uppercase mb-2 flex items-center gap-1">
                                   <span>📈</span> Perbandingan Nilai Rata-rata
                                 </h4>
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                   <div>
-                                    <div className="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                                    <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-0.5">
                                       <span>SAS (Nilai Semester Ganjil)</span>
                                       <span className="font-extrabold text-slate-900">{selectedStudent.sas}</span>
                                     </div>
-                                    <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
+                                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
                                       <div className="bg-[#2b3990] h-full rounded-full transition-all duration-500" style={{ width: `${selectedStudent.sas}%` }}></div>
                                     </div>
                                   </div>
                                   <div>
-                                    <div className="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                                    <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-0.5">
                                       <span>SAT (Nilai Semester Genap)</span>
                                       <span className="font-extrabold text-[#00aeef]">{selectedStudent.sat}</span>
                                     </div>
-                                    <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
+                                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
                                       <div className="bg-[#00aeef] h-full rounded-full transition-all duration-500" style={{ width: `${selectedStudent.sat}%` }}></div>
                                     </div>
                                   </div>
                                 </div>
                               </div>
-                              <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 mt-2">
-                                <p className="text-[11px] text-slate-600 font-semibold leading-relaxed">
+                              <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 mt-1">
+                                <p className="text-[10px] text-slate-600 font-semibold leading-normal">
                                   <span className="font-bold text-slate-800">Catatan Nilai: </span>
                                   {!progress.positive ? (
-                                    <span>Perlu perhatian khusus pada beberapa materi mapel karena ada sedikit penurunan rata-rata ({progress.percent}%).</span>
+                                    <span>Ada sedikit penurunan rata-rata ({progress.percent}%). Perlu bimbingan intensif.</span>
                                   ) : (
-                                    <span>Masya Allah, terjadi peningkatan nilai rata-rata perkembangan kognitif sebesar <span className="text-emerald-600 font-extrabold">+{progress.percent}%</span>.</span>
+                                    <span>Peningkatan perkembangan kognitif sebesar <span className="text-emerald-600 font-extrabold">+{progress.percent}%</span>.</span>
                                   )}
                                 </p>
                               </div>
                             </div>
 
                             {/* Psikotes & Progres */}
-                            <div className="border border-slate-200 rounded-xl p-4 bg-white flex flex-col gap-3 h-[230px] h-print-230 shadow-sm">
-                              <h4 className="text-xs font-black text-[#2b3990] uppercase flex items-center gap-1">
+                            <div className="border border-slate-200 rounded-xl p-3 bg-white flex flex-col gap-2 h-[230px] h-print-chart shadow-sm">
+                              <h4 className="text-[11px] font-black text-[#2b3990] uppercase flex items-center gap-1">
                                 <span>🎯</span> Progres & Bakat Santriwati
                               </h4>
-                              <div className="bg-purple-50/55 border border-purple-100 rounded-lg p-3 flex-1 flex flex-col justify-center">
-                                <div className="flex items-center gap-1.5 mb-1">
+                              <div className="bg-purple-50/55 border border-purple-100 rounded-lg p-2.5 flex-1 flex flex-col justify-center">
+                                <div className="flex items-center gap-1 mb-0.5">
                                   <span className="text-purple-700 text-xs font-bold">🧠</span>
-                                  <span className="text-[9px] text-purple-900 font-extrabold uppercase tracking-wide">Potensi Bakat & Psikotes</span>
+                                  <span className="text-[8px] text-purple-900 font-extrabold uppercase tracking-wide">Potensi Bakat & Psikotes</span>
                                 </div>
-                                <p className="text-[11px] leading-relaxed text-purple-950 font-medium line-clamp-3">{selectedStudent.psikotes}</p>
+                                <p className="print-desc-text text-xs leading-normal text-purple-950 font-medium line-clamp-3">{selectedStudent.psikotes}</p>
                               </div>
-                              <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-3 flex-1 flex flex-col justify-center">
-                                <div className="flex items-center gap-1.5 mb-1">
+                              <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-2.5 flex-1 flex flex-col justify-center">
+                                <div className="flex items-center gap-1 mb-0.5">
                                   <span className="text-indigo-600 text-xs">💪</span>
-                                  <span className="text-[9px] text-indigo-900 font-extrabold uppercase tracking-wide">Perkembangan Nyata</span>
+                                  <span className="text-[8px] text-indigo-900 font-extrabold uppercase tracking-wide">Perkembangan Nyata</span>
                                 </div>
-                                <p className="text-[11px] leading-relaxed text-indigo-950 font-medium line-clamp-3">{selectedStudent.progres_1s}</p>
+                                <p className="print-desc-text text-xs leading-normal text-indigo-950 font-medium line-clamp-3">{selectedStudent.progres_1s}</p>
                               </div>
                             </div>
 
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 grid-cols-print-2 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 grid-cols-print-2 gap-3">
                             {/* Daya Serap Mapel */}
-                            <div className="border border-slate-200 rounded-xl p-4 bg-white h-[105px] h-print-105 shadow-sm flex flex-col justify-center">
-                              <h4 className="text-xs font-black text-[#2b3990] uppercase mb-2 flex items-center gap-1">
+                            <div className="border border-slate-200 rounded-xl p-3 bg-white h-[105px] h-print-half shadow-sm flex flex-col justify-center">
+                              <h4 className="text-[11px] font-black text-[#2b3990] uppercase mb-1.5 flex items-center gap-1">
                                 <span>📚</span> Daya Serap & Penguasaan
                               </h4>
-                              <div className="space-y-1 text-xs">
-                                <div className="leading-tight"><span className="font-bold text-slate-500 text-[10px] uppercase">Sangat Unggul:</span> <span className="font-bold text-[#2b3990]">{selectedStudent.mapel_unggul}</span></div>
-                                <div className="leading-tight pt-1 border-t border-slate-100 mt-1"><span className="font-bold text-slate-500 text-[10px] uppercase">Butuh Bimbingan:</span> <span className="font-bold text-rose-600">{selectedStudent.mapel_perlu}</span></div>
+                              <div className="space-y-0.5 text-xs">
+                                <div className="leading-tight"><span className="font-bold text-slate-500 text-[9px] uppercase">Sangat Unggul:</span> <span className="font-bold text-[#2b3990]">{selectedStudent.mapel_unggul}</span></div>
+                                <div className="leading-tight pt-1 border-t border-slate-100 mt-1"><span className="font-bold text-slate-500 text-[9px] uppercase">Butuh Bimbingan:</span> <span className="font-bold text-rose-600">{selectedStudent.mapel_perlu}</span></div>
                               </div>
                             </div>
                             
                             {/* Capaian Tahfizh */}
-                            <div className="border border-teal-200 bg-teal-50/20 rounded-xl p-4 h-[105px] h-print-105 shadow-sm flex flex-col justify-center">
+                            <div className="border border-teal-200 bg-teal-50/20 rounded-xl p-3 h-[105px] h-print-half shadow-sm flex flex-col justify-center">
                               <div className="flex justify-between items-center mb-1">
-                                <h4 className="text-xs font-black text-teal-800 uppercase flex items-center gap-1">
+                                <h4 className="text-[11px] font-black text-teal-800 uppercase flex items-center gap-1">
                                   <span>📖</span> Tahfizh Al-Qur'an
                                 </h4>
-                                <span className="px-2 py-0.5 bg-teal-600 text-white font-extrabold text-[10px] rounded-full">{selectedStudent.tahfizh_juz} Juz</span>
+                                <span className="px-2 py-0.5 bg-teal-600 text-white font-extrabold text-[9px] rounded-full">{selectedStudent.tahfizh_juz} Juz</span>
                               </div>
-                              <p className="text-xs font-bold text-teal-950 leading-relaxed">{selectedStudent.tahfizh_detail || `${selectedStudent.tahfizh_juz} Juz Terhafal`}</p>
+                              <p className="print-desc-text text-xs font-bold text-teal-950 leading-normal line-clamp-2">{selectedStudent.tahfizh_detail || `${selectedStudent.tahfizh_juz} Juz Terhafal`}</p>
                             </div>
                           </div>
                         </div>
 
                         {/* BAGIAN KARAKTER & AKHLAK */}
                         <div>
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-[4px] h-[22px] bg-[#2b3990]"></div>
-                            <h3 className="text-sm font-black uppercase text-indigo-950">II. KARAKTER DAN KEMATANGAN DIRI</h3>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-[4px] h-[18px] bg-[#2b3990]"></div>
+                            <h3 className="print-title-text text-xs font-black uppercase text-indigo-950">II. KARAKTER DAN KEMATANGAN DIRI</h3>
                           </div>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-2 grid-cols-print-2 gap-4">
-                            <div className="border border-blue-200 bg-blue-50/10 rounded-xl p-4 h-[105px] h-print-105 shadow-sm flex flex-col justify-between">
-                              <h4 className="text-[11px] font-black text-blue-800 uppercase flex items-center gap-1"><span>🕌</span> Ibadah Harian</h4>
-                              <p className="text-xs text-slate-700 font-medium leading-relaxed line-clamp-3">{selectedStudent.ibadah}</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 grid-cols-print-2 gap-3">
+                            <div className="border border-blue-200 bg-blue-50/10 rounded-xl p-3 h-[105px] h-print-half shadow-sm flex flex-col justify-between">
+                              <h4 className="text-[10px] font-black text-blue-800 uppercase flex items-center gap-1"><span>🕌</span> Ibadah Harian</h4>
+                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-3">{selectedStudent.ibadah}</p>
                             </div>
-                            <div className="border border-rose-200 bg-rose-50/10 rounded-xl p-4 h-[105px] h-print-105 shadow-sm flex flex-col justify-between">
-                              <h4 className="text-[11px] font-black text-rose-800 uppercase flex items-center gap-1"><span>🛡️</span> Sikap & Disiplin</h4>
-                              <p className="text-xs text-slate-700 font-medium leading-relaxed line-clamp-3">{selectedStudent.disiplin}</p>
+                            <div className="border border-rose-200 bg-rose-50/10 rounded-xl p-3 h-[105px] h-print-half shadow-sm flex flex-col justify-between">
+                              <h4 className="text-[10px] font-black text-rose-800 uppercase flex items-center gap-1"><span>🛡️</span> Sikap & Disiplin</h4>
+                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-3">{selectedStudent.disiplin}</p>
                             </div>
-                            <div className="border border-amber-200 bg-amber-50/10 rounded-xl p-4 h-[105px] h-print-105 shadow-sm flex flex-col justify-between">
-                              <h4 className="text-[11px] font-black text-amber-800 uppercase flex items-center gap-1"><span>🤝</span> Kepemimpinan & Sosial</h4>
-                              <p className="text-xs text-slate-700 font-medium leading-relaxed line-clamp-3">{selectedStudent.sosial}</p>
+                            <div className="border border-amber-200 bg-amber-50/10 rounded-xl p-3 h-[105px] h-print-half shadow-sm flex flex-col justify-between">
+                              <h4 className="text-[10px] font-black text-amber-800 uppercase flex items-center gap-1"><span>🤝</span> Kepemimpinan & Sosial</h4>
+                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-3">{selectedStudent.sosial}</p>
                             </div>
-                            <div className="border border-yellow-300 bg-yellow-50/10 rounded-xl p-4 h-[105px] h-print-105 shadow-sm flex flex-col justify-between">
-                              <h4 className="text-[11px] font-black text-yellow-800 uppercase flex items-center gap-1"><span>🏆</span> Prestasi Non-Akademik</h4>
-                              <p className="text-xs text-slate-700 font-medium leading-relaxed line-clamp-3">{selectedStudent.prestasi}</p>
+                            <div className="border border-yellow-300 bg-yellow-50/10 rounded-xl p-3 h-[105px] h-print-half shadow-sm flex flex-col justify-between">
+                              <h4 className="text-[10px] font-black text-yellow-800 uppercase flex items-center gap-1"><span>🏆</span> Prestasi Non-Akademik</h4>
+                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-3">{selectedStudent.prestasi}</p>
                             </div>
                           </div>
                         </div>
@@ -956,8 +873,8 @@
                     </div>
                   </div>
 
-                  {/* HALAMAN 2 (A4) */}
-                  <div className="print-page bg-white max-w-[210mm] mx-auto p-12 shadow-md border border-slate-200 relative overflow-hidden">
+                  {/* HALAMAN 2 (A4) - Perfectly Proportioned signature area */}
+                  <div className="print-page print-h-page print-p-premium bg-white max-w-[210mm] mx-auto p-12 shadow-md border border-slate-200 relative overflow-hidden flex flex-col justify-between">
                     
                     {/* Watermark Logo Samar */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] pointer-events-none opacity-[0.03] flex items-center justify-center">
@@ -967,58 +884,69 @@
                     <div className="relative z-10 flex flex-col h-full justify-between">
                       <div>
                         {/* Header Mini */}
-                        <div className="border-b pb-3 mb-6">
+                        <div className="border-b pb-2 mb-4">
                           <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lanjutan Rapor Holistik Santriwati</span>
-                            <span className="text-xs font-extrabold text-[#2b3990]">{selectedStudent.nama} ({selectedStudent.nis})</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lanjutan Rapor Holistik Santriwati</span>
+                            <span className="text-[10px] font-extrabold text-[#2b3990]">{selectedStudent.nama} ({selectedStudent.nis})</span>
                           </div>
                         </div>
 
                         {/* Fokus Kelas Selanjutnya */}
-                        <div className="mb-6">
-                          <div className="border-2 border-dashed border-indigo-200 bg-indigo-50/5 rounded-xl p-5 shadow-sm">
-                            <h4 className="text-xs font-black text-indigo-950 mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                        <div className="mb-4">
+                          <div className="border border-indigo-100 bg-indigo-50/10 rounded-xl p-4 shadow-sm">
+                            <h4 className="text-[11px] font-black text-indigo-950 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
                               <span>🎯</span> Fokus Peningkatan & Target Semester Depan
                             </h4>
-                            <p className="text-xs text-slate-700 font-medium leading-relaxed">{selectedStudent.fokus}</p>
+                            <p className="print-desc-text text-xs text-slate-700 font-medium leading-relaxed">{selectedStudent.fokus}</p>
                           </div>
                         </div>
 
                         {/* Catatan Komprehensif Asrama */}
-                        <div className="mb-10">
-                          <div className="border-2 border-dashed border-purple-200 bg-purple-50/5 rounded-xl p-5 shadow-sm">
-                            <h4 className="text-xs font-black text-purple-950 mb-2 uppercase tracking-wider flex items-center gap-1.5">
+                        <div className="mb-6">
+                          <div className="border border-purple-100 bg-purple-50/10 rounded-xl p-4 shadow-sm">
+                            <h4 className="text-[11px] font-black text-purple-950 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
                               <span>💬</span> Pesan / Rekomendasi Wali Kelas & Wali Kamar
                             </h4>
-                            <p className="text-xs text-slate-700 font-medium leading-relaxed">{selectedStudent.pesan_wali}</p>
+                            <p className="print-desc-text text-xs text-slate-700 font-medium leading-relaxed">{selectedStudent.pesan_wali}</p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Area Tanda Tangan */}
-                      <div className="space-y-12">
+                      {/* Area Tanda Tangan - Sangat Lapang & Tertata Rapi */}
+                      <div className="space-y-6 border-t pt-4">
                         <div className="text-center text-xs">
-                          <p className="font-semibold text-slate-500">Tangerang, {globalTanggal}</p>
+                          <p className="font-semibold text-slate-600">Tangerang, {globalTanggal}</p>
                         </div>
                         
-                        <div className="grid grid-cols-2 grid-cols-print-2 gap-12 text-center text-xs">
-                          <div>
-                            <p className="text-slate-400 font-bold uppercase tracking-wider mb-16">Wali Kelas</p>
-                            <p className="font-extrabold text-slate-900 underline text-sm">{globalWaliKelas}</p>
-                            <p className="text-[10px] text-slate-400 font-medium">Asatidzah Pengampu Akademik</p>
+                        {/* Row 1: Wali Kelas & Wali Kamar */}
+                        <div className="grid grid-cols-2 grid-cols-print-2 gap-8 text-center text-xs">
+                          <div className="flex flex-col justify-between">
+                            <p className="text-slate-400 font-bold uppercase tracking-wider">Wali Kelas</p>
+                            <div className="print-signature-space h-[72px]"></div> {/* Lapang untuk Tanda Tangan */}
+                            <div>
+                              <p className="font-extrabold text-slate-900 underline text-xs">{globalWaliKelas}</p>
+                              <p className="text-[9px] text-slate-400 font-medium">Asatidzah Pengampu Akademik</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-slate-400 font-bold uppercase tracking-wider mb-16">Wali Kamar</p>
-                            <p className="font-extrabold text-slate-900 underline text-sm">{globalWaliKamar}</p>
-                            <p className="text-[10px] text-slate-400 font-medium">Musyrif Pendamping Asrama</p>
+                          
+                          <div className="flex flex-col justify-between">
+                            <p className="text-slate-400 font-bold uppercase tracking-wider">Wali Kamar</p>
+                            <div className="print-signature-space h-[72px]"></div> {/* Lapang untuk Tanda Tangan */}
+                            <div>
+                              <p className="font-extrabold text-slate-900 underline text-xs">{globalWaliKamar}</p>
+                              <p className="text-[9px] text-slate-400 font-medium">Musyrif Pendamping Asrama</p>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="text-center text-xs pt-4 relative flex flex-col items-center">
-                          <p className="text-slate-400 font-bold uppercase tracking-wider mb-16">{globalJabatanKS}</p>
-
-                          <p className="font-extrabold text-slate-900 underline text-sm z-10">{globalNamaKS}</p>
-                          <p className="text-[10px] text-slate-400 font-medium">NIP. PP.MLK-202511</p>
+                        {/* Row 2: Kepala Sekolah (Center & Spacious) */}
+                        <div className="text-center text-xs pt-4 flex flex-col items-center justify-between">
+                          <p className="text-slate-400 font-bold uppercase tracking-wider">{globalJabatanKS}</p>
+                          <div className="print-signature-space h-[72px]"></div> {/* Lapang untuk Tanda Tangan & Cap Yayasan */}
+                          <div>
+                            <p className="font-extrabold text-slate-900 underline text-xs">{globalNamaKS}</p>
+                            <p className="text-[9px] text-slate-400 font-medium">NIP. PP.MLK-202511</p>
+                          </div>
                         </div>
                       </div>
 
@@ -1029,7 +957,7 @@
               ) : (
                 <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
                   <p className="text-sm text-slate-400 font-bold">Tidak ada data santriwati yang dapat ditampilkan.</p>
-                  <button onClick={() => { setIsAddingNew(true); setEditingStudent({ nama: "", nis: "", sas: 80, sat: 80, psikotes: "", progres_1s: "", mapel_unggul: "", mapel_perlu: "", ibadah: "", tahfizh_juz: 0, tahfizh_detail: "", disiplin: "", sosial: "", prestasi: "", fokus: "", pesan_wali: "" }); }} className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition">Tambah Santriwati Baru</button>
+                  <button onClick={() => { setIsAddingNew(true); setEditingStudent({ nama: "", nis: "", sas: 85, sat: 88, psikotes: "", progres_1s: "", mapel_unggul: "", mapel_perlu: "", ibadah: "", tahfizh_juz: 0, tahfizh_detail: "", disiplin: "", sosial: "", prestasi: "", fokus: "", pesan_wali: "" }); }} className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition">Tambah Santriwati Baru</button>
                 </div>
               )}
             </div>
@@ -1246,30 +1174,42 @@
             </div>
           )}
 
-          {/* MODAL IMPOR SPREADSHEET */}
+          {/* MODAL UPLOAD SPREADSHEET / EXCEL / CSV */}
           {showImportModal && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 space-y-4">
                 <div className="flex justify-between items-start border-b pb-2">
                   <div>
-                    <h3 className="text-sm font-bold text-[#2b3990]">📥 Impor Massal dari Spreadsheet</h3>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Salin dan tempel data berformat tab-separated dari Google Sheets / Excel.</p>
+                    <h3 className="text-sm font-black text-[#2b3990]">📤 Upload Data Rapor (Excel / CSV)</h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Mendukung unggahan file CSV atau salin & tempel tabel secara langsung dari Excel.</p>
                   </div>
-                  <button onClick={getTemplateTSV} className="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-[#2b3990] font-black px-3 py-1.5 rounded-lg transition border border-indigo-100">Ambil Template</button>
+                  <button onClick={getTemplateTSV} className="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-[#2b3990] font-black px-3 py-1.5 rounded-lg transition border border-indigo-100">Ambil Template Teks</button>
                 </div>
                 
+                {/* File Picker */}
+                <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:bg-slate-50 transition cursor-pointer relative">
+                  <input 
+                    type="file" 
+                    accept=".csv,.tsv,.txt" 
+                    onChange={handleFileUpload} 
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <span className="text-xs font-bold text-slate-700">📁 Klik untuk memilih File Excel / CSV (.csv)</span>
+                  <p className="text-[10px] text-slate-400 mt-1">Atau tempel baris data Excel secara manual pada kolom teks di bawah:</p>
+                </div>
+
                 <textarea 
-                  placeholder="Tempel baris spreadsheet Anda di sini..." 
+                  placeholder="Tempel baris spreadsheet atau edit isi file CSV di sini..." 
                   value={bulkImportText} 
                   onChange={(e) => setBulkImportText(e.target.value)} 
-                  className="w-full h-64 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-mono resize-none focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full h-48 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-mono resize-none focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
                 
                 <div className="flex justify-between items-center pt-4 border-t">
-                  <span className="text-[10px] text-slate-400">Pastikan baris pertama berisi nama tajuk kolom yang sesuai.</span>
+                  <span className="text-[10px] text-slate-400 font-medium">Wajib menggunakan baris tajuk kolom yang sesuai dengan template.</span>
                   <div className="flex gap-1.5">
                     <button onClick={() => setShowImportModal(false)} className="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl">Batal</button>
-                    <button onClick={handleImportTSV} className="px-4 py-2 text-xs font-semibold text-white bg-[#2b3990] hover:bg-[#1f2a70] rounded-xl shadow transition">Proses & Impor</button>
+                    <button onClick={handleImportTSV} className="px-4 py-2 text-xs font-semibold text-white bg-[#2b3990] hover:bg-[#1f2a70] rounded-xl shadow transition">Proses & Upload</button>
                   </div>
                 </div>
               </div>
