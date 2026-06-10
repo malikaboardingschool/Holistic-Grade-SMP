@@ -84,16 +84,21 @@
 
       /* Kunci tinggi statis elemen pada Kolom Kiri Halaman 1 */
       .h-print-chart {
-        height: 58mm !important;
+        height: 52mm !important;
       }
       
       .h-print-half {
-        height: 29mm !important;
+        height: 27mm !important;
+      }
+
+      /* Peningkatan tinggi kotak karakter agar deskripsi panjang tidak terpotong */
+      .h-print-karakter {
+        height: 38mm !important;
       }
 
       /* Kunci tinggi statis elemen pada Kolom Kanan Halaman 1 (Tinggi Maksimal Diskusi Progress 1 Tahun) */
       .h-print-tall {
-        height: 122mm !important;
+        height: 112mm !important;
       }
 
       /* Perbesar ukuran font deskripsi khusus cetak */
@@ -165,7 +170,7 @@
       sosial: [
         "Memiliki jiwa kepemimpinan (leadership) yang menonjol dan mampu mengayomi teman-temannya.",
         "Sangat supel, mudah bergaul, dan aktif menciptakan suasana damai di lingkungan asrama.",
-        "Memiliki empati yang tinggi, gemar menolong sesama teman yang sedang mengalami kesulitan.",
+        "Memiliki eddy yang tinggi, gemar menolong sesama teman yang sedang mengalami kesulitan.",
         "Mampu bekerja sama dengan sangat baik dalam tim serta menghargai perbedaan pendapat.",
         "Sangat dipercaya oleh teman sekelas untuk memimpin diskusi maupun kegiatan kelompok.",
         "Kooperatif, ramah, dan selalu menunjukkan sikap solidaritas yang tinggi antarsesama.",
@@ -751,7 +756,7 @@
                             {/* Kolom Kiri: Grafik Nilai, Daya Serap, Tahfizh */}
                             <div className="flex flex-col gap-3">
                               {/* Box 1: Grafik Perbandingan Nilai (Biru Cerah dengan Kontras Tinggi 12% - Lebih Samar) */}
-                              <div className="border border-[#00aeef]/12 bg-white flex flex-col justify-between h-[230px] h-print-chart shadow-sm rounded-xl p-3">
+                              <div className="border border-[#00aeef]/12 bg-white flex flex-col justify-between h-[210px] h-print-chart shadow-sm rounded-xl p-3">
                                 <div>
                                   <h4 className="text-[11px] font-black text-[#2b3990] uppercase mb-2">
                                     Perbandingan Nilai Rata-rata
@@ -812,10 +817,10 @@
                               </div>
                             </div>
                             
-                            {/* Kolom Kanan: Psikotes & Progress 1 Tahun (Biru Cerah dengan Kontras Tinggi 12%, Latar Belakang 3% - Samar) */}
-                            <div className="border border-[#00aeef]/12 rounded-xl p-3 bg-white flex flex-col gap-2 h-[464px] h-print-tall shadow-sm">
+                            {/* Kolom Kanan: Psikotes & Progress 1 Tahun (Tinggi kotak disesuaikan agar padat, bersih dan proporsional) */}
+                            <div className="border border-[#00aeef]/12 rounded-xl p-3 bg-white flex flex-col gap-2 h-[424px] h-print-tall shadow-sm">
                               <h4 className="text-[11px] font-black text-[#2b3990] uppercase">
-                                Progres & Bakat Santriwati
+                                Hasil Psikotes Awal Masuk
                               </h4>
                               
                               <div className="bg-[#00aeef]/3 border border-[#00aeef]/8 rounded-lg p-2.5 flex-1 flex flex-col justify-center">
@@ -836,7 +841,7 @@
                           </div>
                         </div>
 
-                        {/* BAGIAN KARAKTER & AKHLAK (Biru Cerah dengan Kontras Tinggi 12%, Latar Belakang 3% - Samar) */}
+                        {/* BAGIAN KARAKTER & AKHLAK - Ketinggian kotak ditingkatkan (38mm) & Tanpa Ikon */}
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-[4px] h-[18px] bg-[#2b3990]"></div>
@@ -844,21 +849,21 @@
                           </div>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 grid-cols-print-2 gap-3">
-                            <div className="border border-[#00aeef]/12 bg-[#00aeef]/3 rounded-xl p-3 h-[105px] h-print-half shadow-sm flex flex-col justify-between">
+                            <div className="border border-[#00aeef]/12 bg-[#00aeef]/3 rounded-xl p-3 h-[145px] h-print-karakter shadow-sm flex flex-col justify-between">
                               <h4 className="text-[10px] font-black text-[#2b3990] uppercase">Ibadah Harian</h4>
-                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-3">{selectedStudent.ibadah}</p>
+                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-5">{selectedStudent.ibadah}</p>
                             </div>
-                            <div className="border border-[#00aeef]/12 bg-[#00aeef]/3 rounded-xl p-3 h-[105px] h-print-half shadow-sm flex flex-col justify-between">
+                            <div className="border border-[#00aeef]/12 bg-[#00aeef]/3 rounded-xl p-3 h-[145px] h-print-karakter shadow-sm flex flex-col justify-between">
                               <h4 className="text-[10px] font-black text-[#2b3990] uppercase">Sikap & Disiplin</h4>
-                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-3">{selectedStudent.disiplin}</p>
+                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-5">{selectedStudent.disiplin}</p>
                             </div>
-                            <div className="border border-[#00aeef]/12 bg-[#00aeef]/3 rounded-xl p-3 h-[105px] h-print-half shadow-sm flex flex-col justify-between">
+                            <div className="border border-[#00aeef]/12 bg-[#00aeef]/3 rounded-xl p-3 h-[145px] h-print-karakter shadow-sm flex flex-col justify-between">
                               <h4 className="text-[10px] font-black text-[#2b3990] uppercase">Kepemimpinan & Sosial</h4>
-                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-3">{selectedStudent.sosial}</p>
+                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-5">{selectedStudent.sosial}</p>
                             </div>
-                            <div className="border border-[#00aeef]/12 bg-[#00aeef]/3 rounded-xl p-3 h-[105px] h-print-half shadow-sm flex flex-col justify-between">
+                            <div className="border border-[#00aeef]/12 bg-[#00aeef]/3 rounded-xl p-3 h-[145px] h-print-karakter shadow-sm flex flex-col justify-between">
                               <h4 className="text-[10px] font-black text-[#2b3990] uppercase">Prestasi Non-Akademik</h4>
-                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-3">{selectedStudent.prestasi}</p>
+                              <p className="print-desc-text text-xs text-slate-700 font-medium leading-normal line-clamp-5">{selectedStudent.prestasi}</p>
                             </div>
                           </div>
                         </div>
@@ -1114,7 +1119,7 @@
                             e.target.value = "";
                           }
                         }}
-                        className="text-[10px] text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg px-2 py-0.5 outline-none cursor-pointer font-bold"
+                        className="text-[10px] text-indigo-700 bg-indigo-50 hover:bg-[#00aeef]/10 border border-[#00aeef]/30 rounded-lg px-2.5 py-0.5 outline-none cursor-pointer font-bold"
                       >
                         <option value="">⚡ Pilih Jawaban Cepat...</option>
                         {QUICK_TEMPLATES.prestasi.map((opt, idx) => (
