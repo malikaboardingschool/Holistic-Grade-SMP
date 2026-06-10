@@ -96,7 +96,7 @@
         height: 38mm !important;
       }
 
-      /* Kunci tinggi statis elemen pada Kolom Kanan Halaman 1 (Tinggi Maksimal Diskusi Progress 1 Tahun) */
+      /* Kunci tinggi statis elemen pada Kolom Kanan Halaman 1 (Tinggi Maksimal Progress 1 Tahun) */
       .h-print-tall {
         height: 112mm !important;
       }
@@ -168,7 +168,7 @@
         "Sering terlambat bangun subuh, memerlukan bimbingan intensif dari musyrifah asrama."
       ],
       sosial: [
-        "Memiliki jiwa kepemimpinan (leadership) yang menonjol dan mampu mengayomi teman-temannya.",
+        "Memiliki jiwa kepemimpinan (leadership) yang menonjol and mampu mengayomi teman-temannya.",
         "Sangat supel, mudah bergaul, dan aktif menciptakan suasana damai di lingkungan asrama.",
         "Memiliki eddy yang tinggi, gemar menolong sesama teman yang sedang mengalami kesulitan.",
         "Mampu bekerja sama dengan sangat baik dalam tim serta menghargai perbedaan pendapat.",
@@ -817,16 +817,13 @@
                               </div>
                             </div>
                             
-                            {/* Kolom Kanan: Psikotes & Progress 1 Tahun (Tinggi kotak disesuaikan agar padat, bersih dan proporsional) */}
+                            {/* Kolom Kanan: Hasil Psikotes Awal Masuk & Progress 1 Tahun (Sesuai Revisi: "Potensi Bakat & Psikotes" sub-label dihapus) */}
                             <div className="border border-[#00aeef]/12 rounded-xl p-3 bg-white flex flex-col gap-2 h-[424px] h-print-tall shadow-sm">
                               <h4 className="text-[11px] font-black text-[#2b3990] uppercase">
                                 Hasil Psikotes Awal Masuk
                               </h4>
                               
                               <div className="bg-[#00aeef]/3 border border-[#00aeef]/8 rounded-lg p-2.5 flex-1 flex flex-col justify-center">
-                                <div className="flex items-center gap-1 mb-0.5">
-                                  <span className="text-[8px] text-[#2b3990] font-extrabold uppercase tracking-wide">Potensi Bakat & Psikotes</span>
-                                </div>
                                 <p className="print-desc-text text-xs leading-normal text-slate-800 font-medium">{selectedStudent.psikotes}</p>
                               </div>
 
@@ -911,7 +908,7 @@
                         </div>
                       </div>
 
-                      {/* Area Tanda Tangan - Dinaikkan 3 cm dengan Spacer Cetak */}
+                      {/* Area Tanda Tangan - Sesuai Revisi: Semua sub-keterangan dan nomor NIP telah dihapus */}
                       <div className="space-y-6 border-t pt-4">
                         <div className="text-center text-xs">
                           <p className="font-semibold text-slate-600">Tangerang, {globalTanggal}</p>
@@ -924,7 +921,6 @@
                             <div className="print-signature-space h-[72px]"></div>
                             <div>
                               <p className="font-extrabold text-slate-900 underline text-xs">{globalWaliKelas}</p>
-                              <p className="text-[9px] text-slate-400 font-medium">Asatidzah Pengampu Akademik</p>
                             </div>
                           </div>
                           
@@ -933,7 +929,6 @@
                             <div className="print-signature-space h-[72px]"></div>
                             <div>
                               <p className="font-extrabold text-slate-900 underline text-xs">{selectedStudent.wali_kamar || "Ustadzah Sarah Mutia"}</p>
-                              <p className="text-[9px] text-slate-400 font-medium">Musyrif Pendamping Asrama</p>
                             </div>
                           </div>
                         </div>
@@ -944,7 +939,6 @@
                           <div className="print-signature-space h-[72px]"></div>
                           <div>
                             <p className="font-extrabold text-slate-900 underline text-xs">{globalNamaKS}</p>
-                            <p className="text-[9px] text-slate-400 font-medium">NIP. PP.MLK-202511</p>
                           </div>
                         </div>
                       </div>
@@ -1053,7 +1047,7 @@
                             e.target.value = "";
                           }
                         }}
-                        className="text-[10px] text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg px-2 py-0.5 outline-none cursor-pointer font-bold"
+                        className="text-[10px] text-[#00aeef]/10 hover:bg-[#00aeef]/20 border border-indigo-100 rounded-lg px-2 py-0.5 outline-none cursor-pointer font-bold"
                       >
                         <option value="">⚡ Pilih Jawaban Cepat...</option>
                         {QUICK_TEMPLATES.ibadah.map((opt, idx) => (
