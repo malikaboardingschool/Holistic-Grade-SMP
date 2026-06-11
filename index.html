@@ -15,6 +15,11 @@
   <!-- Babel Standalone CDN -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+  <!-- Firebase SDK versi Compat (Sangat Stabil di Iframe & Sandboxed Browser) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&display=swap');
     body {
@@ -129,6 +134,30 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
 
+    // Inisialisasi Layanan Penyimpanan database secara dinamis di luar komponen
+    let app, auth, db;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+    try {
+      const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: ""
+      };
+      if (!firebase.apps.length) {
+        app = firebase.initializeApp(firebaseConfig);
+      } else {
+        app = firebase.app();
+      }
+      auth = firebase.auth();
+      db = firebase.firestore();
+    } catch (e) {
+      console.error("Inisialisasi database bermasalah:", e);
+    }
+
     // Pilihan Jawaban Templat untuk Membantu Pengisian Cepat
     const QUICK_TEMPLATES = {
       progres_1s: [
@@ -150,9 +179,9 @@
         "Tertib dalam mengikuti seluruh rangkaian halaqah Al-Qur'an pagi dan sore hari.",
         "Melaksanakan shalat lima waktu dengan khusyuk dan rajin murojaah hafalan mandiri.",
         "Menunjukkan kesadaran ibadah yang tinggi tanpa harus sering diingatkan oleh pengasuh.",
-        "Aktif membantu merapikan perlengkapan shalat di masjid MBS putri setelah selesai berjamaah.",
+        "Aktif membantu merapikan perlengkapan shalat di mushola putri setelah selesai berjamaah.",
         "Ibadah wajib terlaksana dengan baik, perlu meningkatkan motivasi untuk shalat dhuha.",
-        "Shalat fardhu berjalan tertib, namun perlu dibimbing agar lebih tepat waktu ke masjid MBS.",
+        "Shalat fardhu berjalan tertib, namun perlu dibimbing agar lebih tepat waktu ke mushola.",
         "Perlu bimbingan dan perhatian ekstra agar lebih disiplin dalam mengikuti halaqah subuh."
       ],
       disiplin: [
@@ -229,12 +258,12 @@
         progres_1s: "Mengalami lompatan pemahaman kognitif yang sangat baik, sangat vokal dan antusias dalam berdiskusi kelompok, serta konsisten menyerahkan tugas tepat waktu.", 
         mapel_unggul: "Bahasa Arab, Seni Budaya, Fiqih", 
         mapel_perlu: "Matematika", 
-        ibadah: "Sangat istiqamah dalam shalat berjamaah lima waktu di masjid MBS putri asrama, rajin mengamalkan puasa sunnah Senin-Kamis, dan aktif memimpin pembacaan dzikir pagi.", 
+        ibadah: "Sangat istiqamah dalam shalat berjamaah lima waktu di mushola putri asrama, rajin mengamalkan puasa sunnah Senin-Kamis, dan aktif memimpin pembacaan dzikir pagi.", 
         tahfizh_juz: 5, 
         tahfizh_detail: "5 Juz (Lancar Juz 30, 29, 28, Surah Al-Kahfi, dan Yasin)", 
         disiplin: "Selalu mematuhi peraturan pondok dengan gembira, merapikan kasur dan lemari secara mandiri tanpa disuruh, serta menjadi panutan berpakaian rapi bagi teman asramanya.", 
-        sosial: "Memiliki jiwa kepemimpinan (leadership) alamiah yang menonjol, sangat mudah bergaul, gemar menolong teman yang kesulitan, dan mampu menciptakan suasana harmonis di kelas.", 
-        prestasi: "Sangat aktif dalam kegiatan Muhadhoroh dan Seni.", 
+        sosial: "Memiliki jiwa kepemimpinan (leadership) alamiah yang menonjol, sangat mudah bergaul, gemar menolong teman yang kesulitan, dan mampu crystalline suasana harmonis di kelas.", 
+        prestasi: "Juara 1 Lomba Pidato Dakwah Keagamaan (Muhadharah) tingkat Pondok Pesantren Malika.", 
         fokus: "Meningkatkan ketelitian dalam menyelesaikan soal hitungan Matematika dan lebih tenang serta tartil ketika menyetor hafalan baru.", 
         pesan_wali: "Masya Allah, ananda Aira adalah santriwati yang penuh energi positif and membawa keceriaan di lingkungan pesantren. Teruslah konsisten menjaga ibadah, tingkatkan penguasaan materi hitungan, dan gunakan kemampuan komunikasi ananda yang luar biasa ini untuk menebar dakwah serta kebaikan di mana pun berada.",
         wali_kamar: "Ustadzah Sarah Mutia"
@@ -244,11 +273,12 @@
     function App() {
       // Inisialisasi awal menggunakan data lokal
       const [students, setStudents] = useState(initialStudents);
+      const [user, setUser] = useState(null);
 
       // State Pengaturan Global (Semester, Tanggal, dll)
-      const [globalSemester, setGlobalSemester] = useState("Genap 2025/2026");
-      const [globalTanggal, setGlobalTanggal] = useState("16 Juni 2026");
-      const [globalWaliKelas, setGlobalWaliKelas] = useState("Ahmad Royhan Mutsaqqof, Lc");
+      const [globalSemester, setGlobalSemester] = useState("Ganjil 2025/2026");
+      const [globalTanggal, setGlobalTanggal] = useState("19 Desember 2025");
+      const [globalWaliKelas, setGlobalWaliKelas] = useState("Ustadzah Maulana Azka, S.Pd.");
       const [globalJabatanKS, setGlobalJabatanKS] = useState("Kepala SMP");
       const [globalNamaKS, setGlobalNamaKS] = useState("Ustadz Abd. Halim, S.S.I");
 
@@ -263,6 +293,100 @@
 
       // State collapsible Pengaturan Identitas Dokumen (Default: false agar tersembunyi rapi)
       const [showSettings, setShowSettings] = useState(false);
+
+      // --- SINKRONISASI & OTENTIKASI AWAN SECARA SENYAP (Mencegah Kehilangan Data) ---
+      useEffect(() => {
+        if (!auth) return;
+        const initAuth = async () => {
+          try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await auth.signInWithCustomToken(__initial_auth_token);
+            } else {
+              await auth.signInAnonymously();
+            }
+          } catch (error) {
+            console.error("Autentikasi gagal:", error);
+          }
+        };
+        initAuth();
+        const unsubscribe = auth.onAuthStateChanged(setUser);
+        return () => unsubscribe();
+      }, []);
+
+      // Ambil Data Rapor secara Real-time dari Penyimpanan
+      useEffect(() => {
+        if (!user || !db) return;
+
+        // Strict Path sesuai Aturan 1
+        const studentsCol = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('students');
+        
+        const unsubscribe = studentsCol.onSnapshot((snapshot) => {
+          const list = [];
+          snapshot.forEach((doc) => {
+            list.push({ id: doc.id, ...doc.data() });
+          });
+
+          if (list.length === 0) {
+            // Seed otomatis template contoh jika database kosong
+            initialStudents.forEach((s) => {
+              studentsCol.doc(s.id).set(s);
+            });
+          } else {
+            // Urutkan data secara internal di memori browser (Aturan 2)
+            list.sort((a, b) => {
+              const numA = parseInt(a.nis.replace(/\D/g, '')) || 0;
+              const numB = parseInt(b.nis.replace(/\D/g, '')) || 0;
+              return numA - numB;
+            });
+            setStudents(list);
+          }
+        }, (error) => {
+          console.error("Gagal membaca database:", error);
+        });
+
+        return () => unsubscribe();
+      }, [user]);
+
+      // Ambil Pengaturan Identitas Dokumen secara Real-time
+      useEffect(() => {
+        if (!user || !db) return;
+
+        const settingsDoc = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('settings').doc('global');
+        
+        const unsubscribe = settingsDoc.onSnapshot((docSnap) => {
+          if (docSnap.exists) {
+            const data = docSnap.data();
+            if (data.semester) setGlobalSemester(data.semester);
+            if (data.tanggal) setGlobalTanggal(data.tanggal);
+            if (data.waliKelas) setGlobalWaliKelas(data.waliKelas);
+            if (data.jabatanKS) setGlobalJabatanKS(data.jabatanKS);
+            if (data.namaKS) setGlobalNamaKS(data.namaKS);
+          } else {
+            settingsDoc.set({
+              semester: "Ganjil 2025/2026",
+              tanggal: "19 Desember 2025",
+              waliKelas: "Ustadzah Maulana Azka, S.Pd.",
+              jabatanKS: "Kepala SMP",
+              namaKS: "Ustadz Abd. Halim, S.S.I"
+            });
+          }
+        }, (error) => {
+          console.error("Gagal memuat setting:", error);
+        });
+
+        return () => unsubscribe();
+      }, [user]);
+
+      // Fungsi untuk menyimpan perubahan setting ke database permanen
+      const updateGlobalSettingInCloud = async (key, val) => {
+        if (!user || !db) return;
+        try {
+          const settingsDoc = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('settings').doc('global');
+          await settingsDoc.set({ [key]: val }, { merge: true });
+        } catch (err) {
+          console.error("Gagal menyimpan setting permanen:", err);
+        }
+      };
 
       // Dropdown pencarian santri di filter bar utama
       const [reportSearchQuery, setReportSearchQuery] = useState("");
@@ -306,8 +430,8 @@
         }
       };
 
-      // Menyimpan data santriwati langsung ke dalam state lokal
-      const handleSaveStudent = (studentData) => {
+      // Menyimpan data santriwati langsung ke dalam database awan permanen (Aturan 3)
+      const handleSaveStudent = async (studentData) => {
         const studentId = isAddingNew ? Date.now().toString() : studentData.id;
         const updatedPayload = {
           ...studentData,
@@ -318,31 +442,62 @@
           wali_kamar: studentData.wali_kamar || "Ustadzah Sarah Mutia"
         };
 
-        if (isAddingNew) {
-          setStudents([...students, updatedPayload]);
-          setSelectedStudentId(studentId);
+        if (user && db) {
+          try {
+            const studentDocRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('students').doc(studentId);
+            await studentDocRef.set(updatedPayload);
+            
+            setSelectedStudentId(studentId);
+            setEditingStudent(null);
+            setIsAddingNew(false);
+            triggerAlert(`Data rapor ananda ${studentData.nama} berhasil disimpan permanen!`, "Sukses Menyimpan");
+          } catch (err) {
+            console.error("Gagal simpan database:", err);
+            triggerAlert("Gagal menyimpan data ke penyimpanan sistem.", "Eror");
+          }
         } else {
-          setStudents(students.map(s => s.id === studentData.id ? updatedPayload : s));
+          // Fallback memori lokal jika koneksi terputus sementara
+          if (isAddingNew) {
+            setStudents([...students, updatedPayload]);
+            setSelectedStudentId(studentId);
+          } else {
+            setStudents(students.map(s => s.id === studentData.id ? updatedPayload : s));
+          }
+          setEditingStudent(null);
+          setIsAddingNew(false);
+          triggerAlert(`Data rapor ananda ${studentData.nama} berhasil disimpan ke memori sementara!`, "Sukses Menyimpan");
         }
-
-        setEditingStudent(null);
-        setIsAddingNew(false);
-        triggerAlert(`Data rapor ananda ${studentData.nama} berhasil disimpan!`, "Sukses Menyimpan");
       };
 
-      // Menghapus data santriwati dari state lokal
+      // Menghapus data santriwati secara permanen
       const handleDeleteStudent = (id, name) => {
-        triggerConfirm(`Apakah Anda yakin ingin menghapus data santriwati "${name}" secara permanen?`, () => {
-          const updated = students.filter(s => s.id !== id);
-          setStudents(updated);
-          triggerAlert("Data santriwati berhasil dihapus.", "Sukses Terhapus");
-          
-          if (updated.length > 0) {
-            if (String(selectedStudentId) === String(id)) {
-              setSelectedStudentId(updated[0].id);
+        triggerConfirm(`Apakah Anda yakin ingin menghapus data santriwati "${name}" secara permanen?`, async () => {
+          if (user && db) {
+            try {
+              const studentDocRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('students').doc(id);
+              await studentDocRef.delete();
+              triggerAlert("Data santriwati berhasil dihapus secara permanen.", "Sukses Terhapus");
+              
+              if (students.length > 1) {
+                const nextValid = students.find(s => s.id !== id);
+                if (nextValid) setSelectedStudentId(nextValid.id);
+              }
+            } catch (err) {
+              console.error("Gagal menghapus:", err);
+              triggerAlert("Gagal menghapus data dari penyimpanan.", "Eror");
             }
           } else {
-            setSelectedStudentId("");
+            const updated = students.filter(s => s.id !== id);
+            setStudents(updated);
+            triggerAlert("Data santriwati berhasil dihapus dari memori sementara.", "Sukses Terhapus");
+            
+            if (updated.length > 0) {
+              if (String(selectedStudentId) === String(id)) {
+                setSelectedStudentId(updated[0].id);
+              }
+            } else {
+              setSelectedStudentId("");
+            }
           }
         });
       };
@@ -409,7 +564,7 @@
       // Template Generator dengan 11 Kolom
       const getTemplateTSV = () => {
         const headers = "Nama Santri\tNIS / Kelas\tProgress 1 Tahun\tTahfizh Al-Qur'an\tIbadah Harian\tSikap & Disiplin\tKepemimpinan & Sosial\tPrestasi Non-Akademik\tFokus Peningkatan & Target Tahun Selanjutnya\tPesan Wali Kelas & Wali Kamar\tNama Wali Kamar";
-        const dummyRow = "Aira Fitriani Azzahra\tNIS-001/7 A\tMengalami lompatan pemahaman kognitif yang sangat baik, sangat vokal dan antusias dalam berdiskusi kelompok, serta konsisten menyerahkan tugas tepat waktu.\t5 Juz (Lancar Juz 30, 29, 28, Surah Al-Kahfi, dan Yasin)\tSangat istiqamah dalam shalat berjamaah lima waktu di masjid MBS putri asrama, rajin mengamalkan puasa sunnah Senin-Kamis.\tSelalu mematuhi peraturan pondok dengan gembira, merapikan kasur and lemari secara mandiri.\tMemiliki jiwa kepemimpinan (leadership) alamiah yang menonjol, sangat mudah bergaul, gemar menolong teman.\tJuara 1 Lomba Pidato Dakwah Keagamaan (Muhadharah) tingkat Pondok Pesantren.\tMeningkatkan ketelitian dalam menyelesaikan soal hitungan Matematika dan lebih tenang serta tartil ketika menyetor hafalan baru.\tMasya Allah, ananda Aira adalah santriwati yang penuh energi positif. Teruslah konsisten menjaga ibadah.\tUstadzah Sarah Mutia";
+        const dummyRow = "Aira Fitriani Azzahra\tNIS-001/7 A\tMengalami lompatan pemahaman kognitif yang sangat baik, sangat vokal dan antusias dalam berdiskusi kelompok, serta konsisten menyerahkan tugas tepat waktu.\t5 Juz (Lancar Juz 30, 29, 28, Surah Al-Kahfi, dan Yasin)\tSangat istiqamah dalam shalat berjamaah lima waktu di mushola putri asrama, rajin mengamalkan puasa sunnah Senin-Kamis.\tSelalu mematuhi peraturan pondok dengan gembira, merapikan kasur and lemari secara mandiri.\tMemiliki jiwa kepemimpinan (leadership) alamiah yang menonjol, sangat mudah bergaul, gemar menolong teman.\tJuara 1 Lomba Pidato Dakwah Keagamaan (Muhadharah) tingkat Pondok Pesantren.\tMeningkatkan ketelitian dalam menyelesaikan soal hitungan Matematika dan lebih tenang serta tartil ketika menyetor hafalan baru.\tMasya Allah, ananda Aira adalah santriwati yang penuh energi positif. Teruslah konsisten menjaga ibadah.\tUstadzah Sarah Mutia";
         
         setBulkImportText(`${headers}\n${dummyRow}`);
         triggerAlert("Template berhasil dimuat di kolom teks di bawah! Anda bisa menyalinnya ke Excel/Sheets untuk diisi, lalu klik 'Proses & Upload'.", "Template Berhasil Dimuat");
@@ -455,7 +610,7 @@
       };
 
       // Proses Impor Data TSV/CSV yang diupload langsung ke State Lokal (dengan Pengecekan Kolom Wali Kamar)
-      const handleImportTSV = () => {
+      const handleImportTSV = async () => {
         try {
           const lines = bulkImportText.trim().split("\n");
           if (lines.length < 2) {
@@ -539,7 +694,15 @@
             newStudentsList.push(rowObj);
           }
 
-          setStudents([...students, ...newStudentsList]);
+          if (user && db) {
+            // Unggah permanen ke database awan
+            for (const s of newStudentsList) {
+              await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('students').doc(s.id).set(s);
+            }
+          } else {
+            setStudents([...students, ...newStudentsList]);
+          }
+
           setShowImportModal(false);
           setBulkImportText("");
           triggerAlert(`Berhasil mengunggah ${newStudentsList.length} data santriwati baru!`, "Upload Sukses");
@@ -573,12 +736,12 @@
                 </div>
                 <div>
                   <h1 className="text-base font-extrabold tracking-wide uppercase leading-none text-slate-100">MALIKA ISLAMIC BOARDING SCHOOL</h1>
-                  <p className="text-[10px] text-indigo-300 font-semibold mt-1">Sistem Rapor Perkembangan Holistik</p>
+                  <p className="text-[10px] text-indigo-300 font-semibold mt-1">Sistem Rapor Holistik Perkembangan Santriwati</p>
                 </div>
               </div>
               <div className="px-3 py-1 bg-slate-800/80 rounded-full text-[10px] font-bold flex items-center gap-2 border border-slate-700/60 shadow-inner">
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                <span className="text-emerald-400">Mode Lokal Aktif</span>
+                <span className="text-emerald-400">Penyimpanan Otomatis Aktif</span>
               </div>
             </div>
           </header>
@@ -613,23 +776,23 @@
                 <div className="p-4 pt-0 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 animate-fadeIn">
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Semester</label>
-                    <input type="text" value={globalSemester} onChange={(e) => setGlobalSemester(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
+                    <input type="text" value={globalSemester} onChange={(e) => { setGlobalSemester(e.target.value); updateGlobalSettingInCloud('semester', e.target.value); }} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
                   </div>
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tanggal Rapor</label>
-                    <input type="text" value={globalTanggal} onChange={(e) => setGlobalTanggal(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
+                    <input type="text" value={globalTanggal} onChange={(e) => { setGlobalTanggal(e.target.value); updateGlobalSettingInCloud('tanggal', e.target.value); }} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
                   </div>
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Wali Kelas</label>
-                    <input type="text" value={globalWaliKelas} onChange={(e) => setGlobalWaliKelas(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
+                    <input type="text" value={globalWaliKelas} onChange={(e) => { setGlobalWaliKelas(e.target.value); updateGlobalSettingInCloud('waliKelas', e.target.value); }} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
                   </div>
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Jabatan TTD</label>
-                    <input type="text" value={globalJabatanKS} onChange={(e) => setGlobalJabatanKS(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
+                    <input type="text" value={globalJabatanKS} onChange={(e) => { setGlobalJabatanKS(e.target.value); updateGlobalSettingInCloud('jabatanKS', e.target.value); }} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
                   </div>
                   <div>
                     <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nama TTD (KS)</label>
-                    <input type="text" value={globalNamaKS} onChange={(e) => setGlobalNamaKS(e.target.value)} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
+                    <input type="text" value={globalNamaKS} onChange={(e) => { setGlobalNamaKS(e.target.value); updateGlobalSettingInCloud('namaKS', e.target.value); }} className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-slate-500 focus:outline-none"/>
                   </div>
                 </div>
               )}
@@ -722,7 +885,7 @@
                             </div>
                             <div>
                               <h2 className="text-lg font-extrabold tracking-wider text-[#2b3990] leading-none mb-1">MALIKA ISLAMIC BOARDING SCHOOL</h2>
-                              <h3 className="text-xs font-black tracking-wider text-[#00aeef] leading-tight">RAPOR PERKEMBANGAN HOLISTIK</h3>
+                              <h3 className="text-xs font-black tracking-wider text-[#00aeef] leading-tight">RAPOR PERKEMBANGAN HOLISTIK SANTRIWATI</h3>
                               <p className="text-[8px] text-slate-500 leading-tight">Jl. KS Tubun, RT. 002, RW. 02, Kel. Koang Jaya, Kec. Karawaci Kota Tangerang, Banten</p>
                             </div>
                           </div>
@@ -817,7 +980,7 @@
                               </div>
                             </div>
                             
-                            {/* Kolom Kanan: Hasil Psikotes Awal Masuk & Progress 1 Tahun (Sesuai Revisi: "Potensi Bakat & Psikotes" sub-label dihapus) */}
+                            {/* Kolom Kanan: Hasil Psikotes Awal Masuk & Progress 1 Tahun */}
                             <div className="border border-[#00aeef]/12 rounded-xl p-3 bg-white flex flex-col gap-2 h-[424px] h-print-tall shadow-sm">
                               <h4 className="text-[11px] font-black text-[#2b3990] uppercase">
                                 Hasil Psikotes Awal Masuk
@@ -908,7 +1071,7 @@
                         </div>
                       </div>
 
-                      {/* Area Tanda Tangan - Sesuai Revisi: Semua sub-keterangan dan nomor NIP telah dihapus */}
+                      {/* Area Tanda Tangan */}
                       <div className="space-y-6 border-t pt-4">
                         <div className="text-center text-xs">
                           <p className="font-semibold text-slate-600">Tangerang, {globalTanggal}</p>
@@ -1047,7 +1210,7 @@
                             e.target.value = "";
                           }
                         }}
-                        className="text-[10px] text-[#00aeef]/10 hover:bg-[#00aeef]/20 border border-indigo-100 rounded-lg px-2 py-0.5 outline-none cursor-pointer font-bold"
+                        className="text-[10px] text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg px-2 py-0.5 outline-none cursor-pointer font-bold"
                       >
                         <option value="">⚡ Pilih Jawaban Cepat...</option>
                         {QUICK_TEMPLATES.ibadah.map((opt, idx) => (
