@@ -136,26 +136,20 @@
 
     // Inisialisasi Layanan Penyimpanan database secara dinamis di luar komponen
     let app, auth, db;
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
     try {
-      const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-        apiKey: "",
-        authDomain: "",
-        projectId: "",
-        storageBucket: "",
-        messagingSenderId: "",
-        appId: ""
-      };
-      if (!firebase.apps.length) {
-        app = firebase.initializeApp(firebaseConfig);
-      } else {
-        app = firebase.app();
+      const firebaseConfig = typeof window !== 'undefined' && window.__firebase_config ? JSON.parse(window.__firebase_config) : null;
+      if (firebaseConfig && firebaseConfig.apiKey) {
+        if (!firebase.apps.length) {
+          app = firebase.initializeApp(firebaseConfig);
+        } else {
+          app = firebase.app();
+        }
+        auth = firebase.auth();
+        db = firebase.firestore();
       }
-      auth = firebase.auth();
-      db = firebase.firestore();
     } catch (e) {
-      console.error("Inisialisasi database bermasalah:", e);
+      console.warn("Database awan dilewati, berjalan pada mode lokal penuh.", e);
     }
 
     // Pilihan Jawaban Templat untuk Membantu Pengisian Cepat
@@ -202,7 +196,7 @@
         "Memiliki empati yang tinggi, gemar menolong sesama teman yang sedang mengalami kesulitan.",
         "Mampu bekerja sama dengan sangat baik dalam tim serta menghargai perbedaan pendapat.",
         "Sangat dipercaya oleh teman sekelas untuk memimpin diskusi maupun kegiatan kelompok.",
-        "Kooperatif, ramah, dan selalu menunjukkan sikap solidaritas yang tinggi antarsesama.",
+        "Kooperatif, ramah, and selalu menunjukkan sikap solidaritas yang tinggi antarsesama.",
         "Mampu merangkul teman sekelas dengan tutur kata yang santun dan menyejukkan.",
         "Sopan dalam berinteraksi, namun perlu meningkatkan rasa percaya diri untuk memimpin.",
         "Cenderung pendiam, perlu didorong untuk lebih aktif membaur dalam kegiatan sosial asrama.",
@@ -246,7 +240,7 @@
       ]
     };
 
-    // Database Default awal - Ria Ricis (Contoh Tunggal)
+    // Database Default awal - Ria Ricis (Contoh 1) & Lionel Messi (Contoh 2)
     const initialStudents = [
       { 
         id: "1", 
@@ -267,10 +261,33 @@
         fokus: "Meningkatkan ketelitian dalam menyelesaikan soal hitungan Matematika dan lebih tenang serta tartil ketika menyetor hafalan baru.", 
         pesan_wali: "Masya Allah, ananda Ria adalah santriwati yang penuh energi positif and membawa keceriaan di lingkungan pesantren. Teruslah konsisten menjaga ibadah, tingkatkan penguasaan materi hitungan, dan gunakan kemampuan komunikasi ananda yang luar biasa ini untuk menebar dakwah serta kebaikan di mana pun berada.",
         wali_kamar: "Sayyidah Raisya Apalah (Arti Menunggu)"
+      },
+      { 
+        id: "2", 
+        nama: "Lionel Messi", 
+        nis: "NIS-002/7 A", 
+        sas: 68, 
+        sat: 72, 
+        psikotes: "Menunjukkan profil anak yang sangat tenang, cenderung introvert, memiliki kepekaan rasa yang dalam terhadap lingkungan, serta potensi kecerdasan spiritual dan kinestetik yang sangat menonjol.", 
+        progres_1s: "Meskipun sempat mengalami hambatan adaptasi karena sifatnya yang sangat pemalu, dalam semester ini ananda mulai menunjukkan kemajuan adaptasi yang stabil. Mulai berani menyapa teman and aktif berinteraksi dengan lingkungan sekitarnya.", 
+        mapel_unggul: "Fiqih, Al-Qur'an Hadits, Tauhid", 
+        mapel_perlu: "Matematika, IPA", 
+        ibadah: "Sangat mencintai kegiatan keagamaan. Ananda sangat rajin datang ke mushola sebelum azan berkumandang, khusyuk saat berdoa, dan selalu bersemangat mengikuti kajian tafsir Al-Qur'an malam hari.", 
+        tahfizh_juz: 3, 
+        tahfizh_detail: "3 Juz (Lancar Juz 30, 29, dan Surah Ar-Rahman)", 
+        disiplin: "Sikap sopan santunnya kepada guru dan asatidzah sangat luar biasa. Selalu menjaga kebersihan barang pribadinya dan tertib mengikuti aturan asrama dengan penuh kelembutan hati.", 
+        sosial: "Memiliki empati yang sangat tinggi terhadap sesama. Meskipun pemalu dan tidak banyak bicara, ananda selalu tanggap membantu teman sekamar yang sedang kesulitan atau lelah tanpa perlu diminta.", 
+        prestasi: "Ananda belum menonjol di bidang prestasi kompetisi formal, namun memiliki pencapaian akhlak mulia dan empati luar biasa yang menjadikannya figur sahabat yang sangat dicintai oleh kawan-kawannya.", 
+        fokus: "Meningkatkan kepercayaan diri untuk berani bertanya di kelas akademik umum, serta memperbanyak latihan soal hitungan Matematika dan IPA.", 
+        pesan_wali: "Bunda dan Ayah yang dicintai Allah, mendampingi Lionel Messi adalah sebuah keindahan tersendiri bagi kami. Lembaran rapor ini mungkin menunjukkan angka akademik yang masih membutuhkan bimbingan ekstra, namun ketahuilah bahwa ananda memiliki 'kecerdasan hati' yang luar biasa. Akhlaknya yang begitu teduh, kecintaannya yang mendalam pada pelajaran agama, serta kepekaan empatinya kepada teman-teman di asrama adalah mutiara berharga. Sifat pemalunya kini perlahan mulai melebur menjadi rasa percaya diri. Kami sangat bangga memiliki santri selembut and berjiwa mulia seperti Messi. Teruslah membersamainya dengan doa, karena mutiara indah ini sedang berproses untuk bersinar terang.",
+        wali_kamar: "Sayyidah Raisya Apalah (Arti Menunggu)"
       }
     ];
 
     function App() {
+      // Mengambil appId secara aman dari global window (Aturan 1 & Aturan 3)
+      const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+
       // Inisialisasi awal menggunakan data lokal
       const [students, setStudents] = useState(initialStudents);
       const [user, setUser] = useState(null);
@@ -299,8 +316,9 @@
         if (!auth) return;
         const initAuth = async () => {
           try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-              await auth.signInWithCustomToken(__initial_auth_token);
+            const token = typeof window !== 'undefined' ? window.__initial_auth_token : undefined;
+            if (token) {
+              await auth.signInWithCustomToken(token);
             } else {
               await auth.signInAnonymously();
             }
@@ -313,7 +331,7 @@
         return () => unsubscribe();
       }, []);
 
-      // Ambil Data Rapor secara Real-time dari Penyimpanan
+      // Ambil Data Rapor secara Real-time dari Penyimpanan jika ada
       useEffect(() => {
         if (!user || !db) return;
 
@@ -441,7 +459,7 @@
             setSelectedStudentId(studentId);
             setEditingStudent(null);
             setIsAddingNew(false);
-            triggerAlert(`Data rapor ananda ${studentData.nama} berhasil disimpan permanen!`, "Sukses Menyimpan");
+            triggerAlert(`Data rapor ananda ${studentData.nama} berhasil disimpan!`, "Sukses Menyimpan");
           } catch (err) {
             console.error("Gagal simpan database:", err);
             triggerAlert("Gagal menyimpan data ke penyimpanan sistem.", "Eror");
@@ -456,7 +474,7 @@
           }
           setEditingStudent(null);
           setIsAddingNew(false);
-          triggerAlert(`Data rapor ananda ${studentData.nama} berhasil disimpan ke memori sementara!`, "Sukses Menyimpan");
+          triggerAlert(`Data rapor ananda ${studentData.nama} berhasil disimpan!`, "Sukses Menyimpan");
         }
       };
 
@@ -480,7 +498,7 @@
           } else {
             const updated = students.filter(s => s.id !== id);
             setStudents(updated);
-            triggerAlert("Data santriwati berhasil dihapus dari memori sementara.", "Sukses Terhapus");
+            triggerAlert("Data santriwati berhasil dihapus.", "Sukses Terhapus");
             
             if (updated.length > 0) {
               if (String(selectedStudentId) === String(id)) {
@@ -837,7 +855,7 @@
                     📤 Upload
                   </button>
                   <button onClick={handleDownloadExcel} className="h-9 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl transition border border-blue-100" title="Unduh data format Excel">
-                    📥 Save File Excel
+                    📥 Download
                   </button>
                   <button onClick={handlePrint} className="h-9 px-4.5 bg-[#2b3990] hover:bg-[#1f2a70] text-white font-extrabold text-xs uppercase rounded-xl transition shadow-md flex items-center gap-1.5">
                     🖨️ Cetak PDF
@@ -985,7 +1003,7 @@
                           </div>
                         </div>
 
-                        {/* BAGIAN KARAKTER & AKHLAK - Ketinggian kotak ditingkatkan (38mm) & Tanpa Ikon */}
+                        {/* BAGIAN KARAKTER & AKHLAK - Ketinggian kotak ditingkatkan (38mm) */}
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-[4px] h-[18px] bg-[#2b3990]"></div>
@@ -1194,7 +1212,7 @@
                             e.target.value = "";
                           }
                         }}
-                        className="text-[10px] text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg px-2 py-0.5 outline-none cursor-pointer font-bold"
+                        className="text-[10px] text-[#00aeef]/10 hover:bg-[#00aeef]/20 border border-indigo-100 rounded-lg px-2 py-0.5 outline-none cursor-pointer font-bold"
                       >
                         <option value="">⚡ Pilih Jawaban Cepat...</option>
                         {QUICK_TEMPLATES.ibadah.map((opt, idx) => (
